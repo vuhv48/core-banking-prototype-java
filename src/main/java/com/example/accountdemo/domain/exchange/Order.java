@@ -57,6 +57,27 @@ public class Order {
         this.status = OrderStatus.PENDING;
     }
 
+    /**
+     * Khôi phục Order từ persistence (không đi qua rule tạo lệnh mới).
+     * Dùng khi load từ DB — giữ nguyên filledQuantity và status đã lưu.
+     */
+    public static Order reconstitute(
+            String orderId,
+            String accountId,
+            OrderSide side,
+            OrderType orderType,
+            TradingPair tradingPair,
+            Quantity quantity,
+            Price price,
+            Quantity filledQuantity,
+            OrderStatus status
+    ) {
+        Order order = new Order(orderId, accountId, side, orderType, tradingPair, quantity, price);
+        order.filledQuantity = filledQuantity != null ? filledQuantity : new Quantity(0);
+        order.status = status != null ? status : OrderStatus.PENDING;
+        return order;
+    }
+
     public void match(Quantity executedQuantity) {
         if (executedQuantity == null || executedQuantity.getValue() <= 0) {
             throw new IllegalArgumentException("executedQuantity phải lớn hơn 0");
@@ -111,6 +132,14 @@ public class Order {
 
     public Price getPrice() {
         return price;
+    }
+
+    public Quantity getQuantity() {
+        return quantity;
+    }
+
+    public Quantity getFilledQuantity() {
+        return filledQuantity;
     }
 
     public OrderStatus getStatus() {

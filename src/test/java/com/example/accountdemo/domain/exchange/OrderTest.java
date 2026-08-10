@@ -2,25 +2,65 @@ package com.example.accountdemo.domain.exchange;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 class OrderTest {
+
+    private static final TradingPair BTC_VND = new TradingPair("BTC", "VND");
+
+    private Order limitBuyOrder(long quantity) {
+        return new Order(
+                "ORD-001",
+                "ACC-001",
+                OrderSide.BUY,
+                OrderType.LIMIT,
+                BTC_VND,
+                new Quantity(quantity),
+                new Price(60_000_000)
+        );
+    }
 
     @Test
     void cancel_shouldThrowWhenOrderAlreadyFilled() {
-        // TODO: tự viết test ở đây
+        Order order = limitBuyOrder(100);
+        order.match(new Quantity(100));
+
+        assertThrows(IllegalStateException.class, order::cancel);
     }
 
     @Test
     void match_shouldSetStatusFilledWhenFullyMatched() {
-        // TODO: tự viết test ở đây
+        Order order = limitBuyOrder(100);
+
+        order.match(new Quantity(100));
+
+        assertEquals(OrderStatus.FILLED, order.getStatus());
+        assertEquals(100, order.getFilledQuantity().getValue());
+        assertEquals(0, order.getRemainingQuantity().getValue());
     }
 
     @Test
     void match_shouldSetStatusPartiallyFilledWhenPartialMatch() {
-        // TODO: tự viết test ở đây
+        Order order = limitBuyOrder(100);
+
+        order.match(new Quantity(30));
+
+        assertEquals(OrderStatus.PARTIALLY_FILLED, order.getStatus());
+        assertEquals(30, order.getFilledQuantity().getValue());
+        assertEquals(70, order.getRemainingQuantity().getValue());
     }
 
     @Test
     void placeOrder_shouldThrowWhenLimitOrderHasNoPrice() {
-        // TODO: tự viết test ở đây
+        assertThrows(IllegalArgumentException.class, () -> new Order(
+                "ORD-001",
+                "ACC-001",
+                OrderSide.BUY,
+                OrderType.LIMIT,
+                BTC_VND,
+                new Quantity(100),
+                null
+        ));
     }
 }

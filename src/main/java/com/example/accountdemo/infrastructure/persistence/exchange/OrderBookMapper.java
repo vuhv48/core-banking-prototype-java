@@ -2,6 +2,7 @@ package com.example.accountdemo.infrastructure.persistence.exchange;
 
 import com.example.accountdemo.domain.exchange.Order;
 import com.example.accountdemo.domain.exchange.OrderBook;
+import com.example.accountdemo.domain.exchange.TradingPair;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -13,20 +14,28 @@ public class OrderBookMapper {
 
     /**
      * Domain → JPA Entity (metadata sổ lệnh).
-     * - entity.id = tradingPair.toString() hoặc base + "/" + quote
-     * - entity.baseCurrency, quoteCurrency từ orderBook.getTradingPair()
-     * Lưu ý: danh sách Order trong OrderBook lưu riêng qua OrderJpaEntity / OrderRepository.
+     * Danh sách Order lưu riêng qua OrderJpaEntity / OrderRepository.
      */
     public OrderBookJpaEntity toEntity(OrderBook orderBook) {
-        throw new UnsupportedOperationException("TODO: tự viết");
+        TradingPair tradingPair = orderBook.getTradingPair();
+        OrderBookJpaEntity entity = new OrderBookJpaEntity();
+        entity.setId(tradingPair.toString());
+        entity.setBaseCurrency(tradingPair.getBaseCurrency());
+        entity.setQuoteCurrency(tradingPair.getQuoteCurrency());
+        return entity;
     }
 
     /**
      * JPA Entity + danh sách Order → Domain OrderBook.
-     * - Tạo TradingPair từ entity
-     * - Tạo OrderBook mới, addOrder từng order trong list
      */
     public OrderBook toDomain(OrderBookJpaEntity entity, List<Order> orders) {
-        throw new UnsupportedOperationException("TODO: tự viết");
+        TradingPair tradingPair = new TradingPair(entity.getBaseCurrency(), entity.getQuoteCurrency());
+        OrderBook orderBook = new OrderBook(tradingPair);
+        if (orders != null) {
+            for (Order order : orders) {
+                orderBook.addOrder(order);
+            }
+        }
+        return orderBook;
     }
 }

@@ -1,8 +1,13 @@
 package com.example.accountdemo.infrastructure.persistence.exchange;
 
+import com.example.accountdemo.domain.exchange.Order;
 import com.example.accountdemo.domain.exchange.OrderBook;
 import com.example.accountdemo.domain.exchange.OrderBookRepository;
 import com.example.accountdemo.domain.exchange.TradingPair;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -28,24 +33,66 @@ public class OrderBookRepositoryJpaImpl implements OrderBookRepository {
         this.orderMapper = orderMapper;
     }
 
-    /**
-     * Tìm sổ lệnh theo cặp giao dịch.
-     * - Tìm OrderBookJpaEntity theo baseCurrency + quoteCurrency
-     * - Load tất cả OrderJpaEntity cùng cặp
-     * - Map sang domain OrderBook (addOrder từng lệnh)
-     */
     @Override
     public OrderBook findByTradingPair(TradingPair pair) {
-        throw new UnsupportedOperationException("TODO: tự viết");
+        return orderBookJpaRepository
+                .findByBaseCurrencyAndQuoteCurrency(pair.getBaseCurrency(), pair.getQuoteCurrency())
+                .filter(entity -> !entity.isDeleted())
+                .map(entity -> {
+                    List<Order> orders = orderJpaRepository
+                            .findByBaseCurrencyAndQuoteCurrency(pair.getBaseCurrency(), pair.getQuoteCurrency())
+                            .stream()
+                            .filter(orderEntity -> !orderEntity.isDeleted())
+                            .map(orderMapper::toDomain)
+                            .toList();
+                    return orderBookMapper.toDomain(entity, orders);
+                })
+                .orElse(null);
     }
 
-    /**
-     * Lưu sổ lệnh.
-     * - Lưu metadata OrderBookJpaEntity
-     * - Lưu từng Order trong buyOrders + sellOrders qua OrderMapper
-     */
     @Override
     public void save(OrderBook orderBook) {
-        throw new UnsupportedOperationException("TODO: tự viết");
+        OrderBookJpaEntity entity = orderBookMapper.toEntity(orderBook);
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<OrderBookJpaEntity> existing = orderBookJpaRepository.findById(entity.getId());
+        if (existing.isPresent()) {
+            OrderBookJpaEntity current = existing.get();
+            entity.setDeleted(current.isDeleted());
+            entity.setCreatedAt(current.getCreatedAt());
+            entity.setCreatedBy(current.getCreatedBy());
+            entity.setUpdatedAt(now);
+            entity.setUpdatedBy(current.getUpdatedBy());
+        } else {
+            entity.setDeleted(false);
+            entity.setCreatedAt(now);
+            entity.setUpdatedAt(now);
+        }
+
+        orderBookJpaRepository.save(entity);
+
+        Stream.concat(orderBook.getBuyOrders().stream(), orderBook.getSellOrders().stream())
+                .forEach(this::saveOrder);
+    }
+
+    private void saveOrder(Order order) {
+        OrderJpaEntity entity = orderMapper.toEntity(order);
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<OrderJpaEntity> existing = orderJpaRepository.findById(order.getOrderId());
+        if (existing.isPresent()) {
+            OrderJpaEntity current = existing.get();
+            entity.setDeleted(current.isDeleted());
+            entity.setCreatedAt(current.getCreatedAt());
+            entity.setCreatedBy(current.getCreatedBy());
+            entity.setUpdatedAt(now);
+            entity.setUpdatedBy(current.getUpdatedBy());
+        } else {
+            entity.setDeleted(false);
+            entity.setCreatedAt(now);
+            entity.setUpdatedAt(now);
+        }
+
+        orderJpaRepository.save(entity);
     }
 }

@@ -72,6 +72,18 @@ public class OrderBook {
                 .min(Comparator.comparingLong(Price::getValue));
     }
 
+    public TradingPair getTradingPair() {
+        return tradingPair;
+    }
+
+    public List<Order> getBuyOrders() {
+        return List.copyOf(buyOrders);
+    }
+
+    public List<Order> getSellOrders() {
+        return List.copyOf(sellOrders);
+    }
+
     private boolean isSameTradingPair(TradingPair other) {
         return tradingPair.getBaseCurrency().equalsIgnoreCase(other.getBaseCurrency())
                 && tradingPair.getQuoteCurrency().equalsIgnoreCase(other.getQuoteCurrency());

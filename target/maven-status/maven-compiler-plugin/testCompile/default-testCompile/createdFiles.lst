@@ -1,4 +1,4 @@
-com/example/accountdemo/application/DepositApplicationServiceTest.class
 com/example/accountdemo/application/WithdrawApplicationServiceTest.class
 com/example/accountdemo/domain/exchange/OrderTest.class
+com/example/accountdemo/application/DepositApplicationServiceTest.class
 com/example/accountdemo/domain/exchange/OrderBookTest.class

@@ -2,6 +2,8 @@ package com.example.accountdemo.infrastructure.persistence.exchange;
 
 import com.example.accountdemo.domain.exchange.Order;
 import com.example.accountdemo.domain.exchange.OrderRepository;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -18,24 +20,33 @@ public class OrderRepositoryJpaImpl implements OrderRepository {
         this.orderMapper = orderMapper;
     }
 
-    /**
-     * Tìm lệnh theo ID.
-     * - orderJpaRepository.findById(orderId)
-     * - map sang domain, bỏ qua bản ghi deleted
-     * - không có → null
-     */
     @Override
     public Order findById(String orderId) {
-        throw new UnsupportedOperationException("TODO: tự viết");
+        return orderJpaRepository.findById(orderId)
+                .filter(entity -> !entity.isDeleted())
+                .map(orderMapper::toDomain)
+                .orElse(null);
     }
 
-    /**
-     * Lưu lệnh.
-     * - orderMapper.toEntity(order) → save
-     * - xử lý audit fields (createdAt, updatedAt...) giống AccountRepositoryJpaImpl
-     */
     @Override
     public void save(Order order) {
-        throw new UnsupportedOperationException("TODO: tự viết");
+        OrderJpaEntity entity = orderMapper.toEntity(order);
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<OrderJpaEntity> existing = orderJpaRepository.findById(order.getOrderId());
+        if (existing.isPresent()) {
+            OrderJpaEntity current = existing.get();
+            entity.setDeleted(current.isDeleted());
+            entity.setCreatedAt(current.getCreatedAt());
+            entity.setCreatedBy(current.getCreatedBy());
+            entity.setUpdatedAt(now);
+            entity.setUpdatedBy(current.getUpdatedBy());
+        } else {
+            entity.setDeleted(false);
+            entity.setCreatedAt(now);
+            entity.setUpdatedAt(now);
+        }
+
+        orderJpaRepository.save(entity);
     }
 }
