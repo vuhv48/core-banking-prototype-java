@@ -77,19 +77,23 @@ public class PlaceOrderApplicationService {
         String orderId = UUID.randomUUID().toString();
         Order order = new Order(orderId, accountId, side, orderType, tradingPair, quantity, price);
 
-        // Sổ BTC/VND phải tồn tại (dòng order_books) — không tự mở cặp
+        // ── Bước 1: LOAD DB → object Java (list buyOrders/sellOrders trong OrderBook) ──
         OrderBook orderBook = orderBookRepository.findByTradingPair(tradingPair);
         if (orderBook == null) {
             throw new IllegalArgumentException("Cặp giao dịch chưa được mở: " + tradingPair);
         }
 
-        // Nghiệp vụ khớp: gặp lệnh đối ứng giá phù hợp → Trade; không thì vào sổ chờ
+        // ── Bước 2: DOMAIN — khớp trên RAM (addOrder/removeOrder/match), chưa ghi DB ──
         MatchResult matchResult = orderMatchingService.match(order, orderBook);
 
-        // Persist: kể cả lệnh đã FILLED (đã remove khỏi list sổ)
+        // ── Bước 3: LƯU DB (bước match KHÔNG làm việc này) ──
+        // Mỗi Order trong affected = 1 dòng bảng orders (INSERT/UPDATE filled_quantity, status...)
+        // Vd: mua 10 khớp 8 còn 2 → BUY-NEW: quantity=10, filled=8, PARTIALLY_FILLED
         for (Order affected : matchResult.getAffectedOrders()) {
             orderRepository.save(affected);
         }
+        // Lưu các lệnh đang nằm TRONG list buyOrders + sellOrders của sổ (RAM → DB)
+        // Lệnh vừa addOrder (còn 2 đồng treo sổ) nằm trong list này → được persist để lần sau load lại
         orderBookRepository.save(orderBook);
 
         // Thông báo mỗi lần khớp (Sprint 5) — save xong mới publish

@@ -29,84 +29,95 @@ public class OrderMatchingService {
      * @return danh sách Trade đã khớp + mọi Order bị đổi status (để Application save)
      */
     public MatchResult match(Order incomingOrder, OrderBook orderBook) {
+        // ── LƯU Ý: class này CHỈ xử lý trên RAM (list Java), KHÔNG gọi DB ──
+        // DB được lưu SAU ở PlaceOrderApplicationService:
+        //   matchResult.getAffectedOrders() → orderRepository.save(...)
+        //   orderBook (list buy/sell)       → orderBookRepository.save(...)
+
         if (incomingOrder == null) {
-            throw new IllegalArgumentException("incomingOrder không được null");
+            throw new IllegalArgumentException("incomingOrder is null");
         }
         if (orderBook == null) {
-            throw new IllegalArgumentException("orderBook không được null");
+            throw new IllegalArgumentException("orderBook is null");
         }
 
+        // Danh sách Trade (VO) — Application dùng để publish event, không lưu bảng trades
         List<Trade> trades = new ArrayList<>();
+        // Order nào bị đổi filled/status → Application sẽ orderRepository.save từng cái
         Set<Order> affected = new LinkedHashSet<>();
-        affected.add(incomingOrder);
+        affected.add(incomingOrder); // lệnh mới luôn bị đụng (dù khớp 0 hay khớp một phần)
 
-        // Lặp: còn khối lượng chưa khớp và còn đối ứng giá phù hợp thì khớp tiếp
         while (!incomingOrder.getRemainingQuantity().isZero()) {
-            // BUY → lấy lệnh bán giá thấp nhất; SELL → lấy lệnh mua giá cao nhất
             Optional<Order> oppositeOpt = findBestOpposite(incomingOrder, orderBook);
             if (oppositeOpt.isEmpty()) {
-                break; // sổ hết lệnh đối ứng đang mở
+                break; // không còn ai đối diện trên sổ → thoát while
             }
-
             Order opposite = oppositeOpt.get();
-            // LIMIT: giá mua phải >= giá bán; MARKET: luôn coi là chấp nhận giá đối ứng
+
             if (!isPriceCompatible(incomingOrder, opposite)) {
-                break; // giá không chồng → dừng, phần dư sẽ vào sổ chờ
+                break; // LIMIT: giá chưa gặp (vd mua 60M, bán 61M) → thoát while
             }
 
-            // Khớp số lượng nhỏ hơn giữa 2 bên (vd mua 10, bán 5 → khớp 5)
-            Quantity matchQty = minQuantity(
-                    incomingOrder.getRemainingQuantity(),
-                    opposite.getRemainingQuantity()
-            );
-            // Giá giao dịch lấy theo lệnh đã nằm sẵn trên sổ (maker)
+            // Khớp số nhỏ hơn giữa remaining hai bên (vd mua 10, bán 5 → khớp 5)
+            Quantity matchQty = incomingOrder.getRemainingQuantity().getValue()
+                    <= opposite.getRemainingQuantity().getValue()
+                    ? incomingOrder.getRemainingQuantity()
+                    : opposite.getRemainingQuantity();
+
             Price matchPrice = opposite.getPrice();
             if (matchPrice == null) {
                 throw new IllegalStateException("Lệnh trên sổ phải có giá để khớp: " + opposite.getOrderId());
             }
 
-            // Cập nhật filledQuantity + status (PENDING → PARTIALLY_FILLED / FILLED)
-            incomingOrder.match(matchQty);
+            incomingOrder.match(matchQty); // tăng filledQuantity, đổi status trên object RAM
             opposite.match(matchQty);
-            affected.add(opposite);
+            affected.add(opposite); // đối ứng cũng đổi → cần save DB sau (kể cả FILLED)
 
-            // Ghi nhận 1 lần khớp (ai mua, ai bán, bao nhiêu, giá nào)
             trades.add(createTrade(incomingOrder, opposite, matchQty, matchPrice));
 
-            // Lệnh đối ứng khớp hết → gỡ khỏi sổ (không còn chờ)
             if (opposite.getStatus() == OrderStatus.FILLED) {
+                // Khớp hết → gỡ khỏi list buyOrders/sellOrders (RAM), tránh khớp lại vòng sau
+                // Dòng FILLED vẫn nằm trong affected → vẫn save xuống bảng orders
                 orderBook.removeOrder(opposite.getOrderId());
             }
         }
 
-        // Phần lệnh mới còn dư sau khi khớp
+        // ── Sau while: xử lý phần lệnh MỚI còn chưa khớp hết ──
         if (!incomingOrder.getRemainingQuantity().isZero()) {
             if (incomingOrder.getOrderType() == OrderType.MARKET) {
-                // MARKET không "chờ" trên sổ → hủy phần chưa khớp
-                incomingOrder.cancel();
+                incomingOrder.cancel(); // MARKET: không treo sổ, hủy phần dư
             } else {
-                // LIMIT còn dư → đưa lên sổ chờ người khác khớp sau
+                // addOrder = đưa lệnh vào buyOrders HOẶC sellOrders (collection trên sổ)
+                //
+                // KHÔNG phải lưu DB trực tiếp!
+                // Nghĩa nghiệp vụ: "lệnh này đang XẾP HÀNG chờ người khác khớp".
+                //
+                // Ví dụ: mua 10, mới khớp 8, còn 2:
+                //   → add vào buyOrders → lần sau có người BÁN vào, findBestOpposite sẽ thấy lệnh này
+                //
+                // incomingOrder đã có trong affected (dòng 49) → save DB sẽ ghi filled=8, status=PARTIALLY_FILLED
+                // PlaceOrderApplicationService còn gọi orderBookRepository.save → sync list sổ xuống DB
                 orderBook.addOrder(incomingOrder);
             }
         }
 
+        // Trả kết quả cho Application — đây là cầu nối sang bước LƯU DB + publish event
         return new MatchResult(trades, new ArrayList<>(affected));
     }
 
-    /** Tìm lệnh đối ứng tốt nhất còn mở (chưa FILLED/CANCELLED). */
-    private Optional<Order> findBestOpposite(Order incoming, OrderBook orderBook) {
-        List<Order> oppositeSide = incoming.getSide() == OrderSide.BUY
-                ? orderBook.getSellOrders()  // đã sort giá tăng dần → phần tử đầu = rẻ nhất
-                : orderBook.getBuyOrders();  // đã sort giá giảm dần → phần tử đầu = cao nhất
-
+    private Optional<Order> findBestOpposite(Order incomingOrder, OrderBook orderBook) {
+        List<Order> oppositeSide = incomingOrder.getSide() == OrderSide.BUY
+                ? orderBook.getSellOrders()
+                : orderBook.getBuyOrders();
         return oppositeSide.stream()
                 .filter(order -> !order.getStatus().isFinal())
                 .findFirst();
     }
 
     /**
-     * Hai lệnh có "gặp nhau" về giá không?
-     * LIMIT mua X, bán Y → khớp khi X >= Y (người mua chịu trả ít nhất bằng giá bán).
+     * Hai lệnh giá có "gặp nhau" để khớp được không?
+     * Rule LIMIT: giá mua phải >= giá bán (người mua chịu trả ít nhất bằng giá người bán hỏi).
+     * MARKET: không có giá riêng → luôn OK.
      */
     private boolean isPriceCompatible(Order incoming, Order opposite) {
         if (incoming.getOrderType() == OrderType.MARKET) {
@@ -115,22 +126,24 @@ public class OrderMatchingService {
 
         Price buyPrice;
         Price sellPrice;
+
+        // Cần biết: trong cặp (incoming, opposite), lệnh nào là BUY, lệnh nào là SELL.
+        // Cách dễ: nhìn theo incoming (lệnh mới), không nhìn opposite.
         if (incoming.getSide() == OrderSide.BUY) {
-            buyPrice = incoming.getPrice();
-            sellPrice = opposite.getPrice();
+            // Lệnh mới là MUA → đối ứng trên sổ là BÁN
+            buyPrice = incoming.getPrice();   // giá mua = giá lệnh mới
+            sellPrice = opposite.getPrice();  // giá bán = giá lệnh trên sổ
         } else {
-            buyPrice = opposite.getPrice();
-            sellPrice = incoming.getPrice();
+            // Lệnh mới là BÁN → đối ứng trên sổ là MUA
+            buyPrice = opposite.getPrice();   // giá mua = giá lệnh trên sổ
+            sellPrice = incoming.getPrice();  // giá bán = giá lệnh mới
         }
 
         if (buyPrice == null || sellPrice == null) {
             return false;
         }
+        // Gặp nhau khi người mua chịu trả >= giá người bán hỏi
         return buyPrice.getValue() >= sellPrice.getValue();
-    }
-
-    private Quantity minQuantity(Quantity a, Quantity b) {
-        return a.getValue() <= b.getValue() ? a : b;
     }
 
     private Trade createTrade(Order incoming, Order opposite, Quantity qty, Price price) {

@@ -11,9 +11,13 @@ package com.example.accountdemo.domain.exchange;
  */
 public final class Trade {
 
+    /** Id lệnh mua đã khớp. */
     private final String buyOrderId;
+    /** Id lệnh bán đã khớp. */
     private final String sellOrderId;
+    /** Số lượng khớp trong lần này (min remaining hai bên). */
     private final Quantity matchedQuantity;
+    /** Giá khớp — lấy theo lệnh đã nằm sẵn trên sổ (maker). */
     private final Price matchedPrice;
 
     public Trade(

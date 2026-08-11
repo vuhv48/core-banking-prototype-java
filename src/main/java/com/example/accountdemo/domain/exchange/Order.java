@@ -6,14 +6,23 @@ package com.example.accountdemo.domain.exchange;
  */
 public class Order {
 
+    /** Id duy nhất của lệnh (vd UUID). */
     private String orderId;
+    /** Ai đặt lệnh (vd ACC-001) — chỉ là nhãn, chưa trừ tiền tài khoản. */
     private String accountId;
+    /** Mua hay bán: BUY / SELL. */
     private OrderSide side;
+    /** Kiểu lệnh: LIMIT (có giá) / MARKET (khớp giá thị trường). */
     private OrderType orderType;
+    /** Cặp giao dịch, vd BTC/VND. */
     private TradingPair tradingPair;
+    /** Số lượng muốn mua/bán (tổng). */
     private Quantity quantity;
+    /** Giá LIMIT (MARKET thì null). */
     private Price price;
+    /** Số lượng đã khớp thành công (ban đầu = 0). */
     private Quantity filledQuantity;
+    /** Trạng thái: PENDING → PARTIALLY_FILLED → FILLED (hoặc CANCELLED). */
     private OrderStatus status;
 
     public Order(

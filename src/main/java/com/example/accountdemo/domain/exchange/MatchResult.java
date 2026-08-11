@@ -20,7 +20,9 @@ import java.util.List;
  */
 public final class MatchResult {
 
+    /** Các lần khớp thành công trong lần gọi match(). */
     private final List<Trade> trades;
+    /** Mọi Order bị đổi (lệnh mới + đối ứng) — Application cần save. */
     private final List<Order> affectedOrders;
 
     public MatchResult(List<Trade> trades, List<Order> affectedOrders) {

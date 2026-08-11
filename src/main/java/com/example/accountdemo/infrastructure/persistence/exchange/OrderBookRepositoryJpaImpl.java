@@ -44,6 +44,8 @@ public class OrderBookRepositoryJpaImpl implements OrderBookRepository {
                             .stream()
                             .filter(orderEntity -> !orderEntity.isDeleted())
                             .map(orderMapper::toDomain)
+                            // Chỉ lệnh còn chờ khớp mới vào sổ — FILLED/CANCELLED vẫn trong bảng orders, không treo sổ
+                            .filter(order -> !order.getStatus().isFinal())
                             .toList();
                     return orderBookMapper.toDomain(entity, orders);
                 })

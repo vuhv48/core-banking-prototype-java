@@ -11,8 +11,11 @@ import java.util.Optional;
  */
 public class OrderBook {
 
+    /** Cặp giao dịch của sổ này, vd BTC/VND. */
     private TradingPair tradingPair;
+    /** Lệnh mua đang chờ (bid) — sort giá cao → thấp. */
     private List<Order> buyOrders;
+    /** Lệnh bán đang chờ (ask) — sort giá thấp → cao. */
     private List<Order> sellOrders;
 
     public OrderBook(TradingPair pair) {
