@@ -3,8 +3,8 @@ package com.example.accountdemo.api;
 import com.example.accountdemo.api.dto.PlaceOrderRequest;
 import com.example.accountdemo.api.dto.PlaceOrderResponse;
 import com.example.accountdemo.application.PlaceOrderApplicationService;
+import com.example.accountdemo.domain.exchange.Order;
 import com.example.accountdemo.domain.exchange.OrderSide;
-import com.example.accountdemo.domain.exchange.OrderStatus;
 import com.example.accountdemo.domain.exchange.OrderType;
 import com.example.accountdemo.domain.exchange.Price;
 import com.example.accountdemo.domain.exchange.Quantity;
@@ -37,7 +37,7 @@ public class OrderController {
         Quantity quantity = new Quantity(request.quantity());
         Price price = request.price() == null ? null : new Price(request.price());
 
-        String orderId = placeOrderApplicationService.placeOrder(
+        Order order = placeOrderApplicationService.placeOrder(
                 request.accountId(),
                 side,
                 orderType,
@@ -46,7 +46,9 @@ public class OrderController {
                 price
         );
 
-        // Sprint 3 chưa match → lệnh mới luôn PENDING
-        return ResponseEntity.ok(new PlaceOrderResponse(orderId, OrderStatus.PENDING.name()));
+        return ResponseEntity.ok(new PlaceOrderResponse(
+                order.getOrderId(),
+                order.getStatus().name()
+        ));
     }
 }

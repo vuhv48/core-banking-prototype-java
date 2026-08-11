@@ -1,47 +1,71 @@
 package com.example.accountdemo.application;
 
+import com.example.accountdemo.domain.exchange.DomainEventPublisher;
+import com.example.accountdemo.domain.exchange.MatchResult;
 import com.example.accountdemo.domain.exchange.Order;
 import com.example.accountdemo.domain.exchange.OrderBook;
 import com.example.accountdemo.domain.exchange.OrderBookRepository;
+import com.example.accountdemo.domain.exchange.OrderMatchingService;
 import com.example.accountdemo.domain.exchange.OrderRepository;
 import com.example.accountdemo.domain.exchange.OrderSide;
 import com.example.accountdemo.domain.exchange.OrderType;
 import com.example.accountdemo.domain.exchange.Price;
 import com.example.accountdemo.domain.exchange.Quantity;
+import com.example.accountdemo.domain.exchange.Trade;
 import com.example.accountdemo.domain.exchange.TradingPair;
+import com.example.accountdemo.domain.exchange.event.TradeExecutedEvent;
+import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 /**
- * Application Service — điều phối use case đặt lệnh.
- * KHÔNG chứa business rule; chỉ gọi domain + repository.
- * Sprint 3: tạo order + đưa vào OrderBook đã mở. Chưa khớp lệnh (Sprint 4).
+ * Application Service — điều phối use case "đặt lệnh", không chứa rule khớp lệnh.
  *
- * Luồng chung (giống deposit Account):
- * load từ DB → domain xử lý trên object (memory tạm) → save lại DB.
+ * <p>Phân loại DDD:
+ * <ul>
+ *   <li>Không phải Aggregate / Domain Service — chỉ orchestrate: load → gọi domain → save → publish</li>
+ *   <li>Rule nghiệp vụ nằm ở {@link com.example.accountdemo.domain.exchange.Order},
+ *       {@link com.example.accountdemo.domain.exchange.OrderBook},
+ *       {@link com.example.accountdemo.domain.exchange.OrderMatchingService}</li>
+ * </ul>
+ *
+ * <p>Luồng:
+ * 1. Tạo lệnh mới (Order tự validate LIMIT phải có giá)
+ * 2. Sổ cặp phải đã được admin/seed mở
+ * 3. Thử khớp với lệnh đang chờ trên sổ
+ * 4. Lưu DB các lệnh đã đổi + sổ
+ * 5. Mỗi lần khớp thành công → publish TradeExecutedEvent (log)
  */
 @Service
 public class PlaceOrderApplicationService {
 
-    /** Port lưu/tải từng lệnh (bảng orders). */
     private final OrderRepository orderRepository;
-
-    /** Port lưu/tải sổ lệnh theo cặp (ghép order_books + orders). */
     private final OrderBookRepository orderBookRepository;
+    private final OrderMatchingService orderMatchingService;
+    private final DomainEventPublisher domainEventPublisher;
 
     public PlaceOrderApplicationService(
             OrderRepository orderRepository,
-            OrderBookRepository orderBookRepository
+            OrderBookRepository orderBookRepository,
+            OrderMatchingService orderMatchingService,
+            DomainEventPublisher domainEventPublisher
     ) {
         this.orderRepository = orderRepository;
         this.orderBookRepository = orderBookRepository;
+        this.orderMatchingService = orderMatchingService;
+        this.domainEventPublisher = domainEventPublisher;
     }
 
     /**
-     * Use case: đặt lệnh mua/bán.
-     * Chỉ điều phối — business rule nằm trong Order / OrderBook.
+     * Đặt lệnh mua/bán trên một cặp (vd BTC/VND).
+     *
+     * @return lệnh sau khi xử lý — status có thể:
+     *         PENDING (chưa khớp, đang chờ trên sổ),
+     *         PARTIALLY_FILLED (khớp một phần),
+     *         FILLED (khớp hết),
+     *         CANCELLED (MARKET còn dư bị hủy)
      */
-    public String placeOrder(
+    public Order placeOrder(
             String accountId,
             OrderSide side,
             OrderType orderType,
@@ -49,32 +73,42 @@ public class PlaceOrderApplicationService {
             Quantity quantity,
             Price price
     ) {
-        // 1) Tạo id mới cho lệnh (chưa lưu DB).
+        // Lệnh mới của user (vd Anh A mua 10 @ 60M)
         String orderId = UUID.randomUUID().toString();
-
-        // 2) Tạo Aggregate Order trong memory.
-        //    Constructor tự validate (vd LIMIT phải có price) — đây là business rule của Order.
         Order order = new Order(orderId, accountId, side, orderType, tradingPair, quantity, price);
 
-        // 3) Load sổ lệnh của cặp từ DB → object OrderBook trong memory (bàn làm việc tạm).
-        //    Bên trong repo: đọc order_books (cặp đã mở?) + orders (các lệnh hiện có) rồi ghép lại.
+        // Sổ BTC/VND phải tồn tại (dòng order_books) — không tự mở cặp
         OrderBook orderBook = orderBookRepository.findByTradingPair(tradingPair);
-
-        // 4) Sổ do admin/seed mở trước. Chưa có dòng trong order_books → reject.
-        //    Không auto-create OrderBook ở đây.
         if (orderBook == null) {
             throw new IllegalArgumentException("Cặp giao dịch chưa được mở: " + tradingPair);
         }
 
-        // 5) Domain: gắn lệnh vào sổ (BUY → buyOrders / SELL → sellOrders, sort giá).
-        //    Chỉ đổi object trong memory — chuẩn bị cho Sprint 4 match.
-        orderBook.addOrder(order);
+        // Nghiệp vụ khớp: gặp lệnh đối ứng giá phù hợp → Trade; không thì vào sổ chờ
+        MatchResult matchResult = orderMatchingService.match(order, orderBook);
 
-        // 6) Persistence: ghi lệnh mới xuống bảng orders.
-        //    Không cần save(orderBook): metadata sổ không đổi; lệnh mới đã save ở trên.
-        //    Sprint 4 (match nhiều lệnh) có thể save(orderBook) một lần cho cả sổ.
-        orderRepository.save(order);
+        // Persist: kể cả lệnh đã FILLED (đã remove khỏi list sổ)
+        for (Order affected : matchResult.getAffectedOrders()) {
+            orderRepository.save(affected);
+        }
+        orderBookRepository.save(orderBook);
 
-        return orderId;
+        // Thông báo mỗi lần khớp (Sprint 5) — save xong mới publish
+        for (Trade trade : matchResult.getTrades()) {
+            domainEventPublisher.publish(toEvent(trade, tradingPair));
+        }
+
+        return order;
+    }
+
+    private TradeExecutedEvent toEvent(Trade trade, TradingPair tradingPair) {
+        return new TradeExecutedEvent(
+                UUID.randomUUID().toString(),
+                trade.getBuyOrderId(),
+                trade.getSellOrderId(),
+                tradingPair,
+                trade.getMatchedQuantity(),
+                trade.getMatchedPrice(),
+                Instant.now()
+        );
     }
 }
