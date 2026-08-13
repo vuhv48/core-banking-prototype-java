@@ -8,7 +8,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Bảng permissions – mỗi record là một quyền cụ thể, ví dụ ORDER_PLACE, ORDER_CANCEL.
+ * Bảng permissions – quyền nghiệp vụ (ORDER_PLACE, ORDER_READ...).
+ * Mapping API nằm ở bảng {@code resources}, không gắn path vào đây.
  */
 @Entity
 @Table(name = "permissions")
@@ -30,14 +31,6 @@ public class PermissionJpaEntity extends BaseEntity {
     /** Mô tả ngắn để dễ quản lý. */
     @Column(length = 255)
     private String description;
-
-    /** HTTP method API yêu cầu quyền này: GET, POST, DELETE, hoặc * (mọi method). */
-    @Column(name = "http_method", length = 10)
-    private String httpMethod;
-
-    /** Ant path pattern, ví dụ /api/orders hoặc /api/orders/** */
-    @Column(name = "path_pattern", length = 255)
-    private String pathPattern;
 
     @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
     private Set<RoleJpaEntity> roles = new LinkedHashSet<>();

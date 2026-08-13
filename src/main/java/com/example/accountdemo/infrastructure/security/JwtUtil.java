@@ -58,8 +58,20 @@ public class JwtUtil {
                 + java.util.UUID.randomUUID().toString().replace("-", "");
     }
 
+    public long getAccessTokenMs() {
+        return accessTokenMs;
+    }
+
     public long getRefreshTokenMs() {
         return refreshTokenMs;
+    }
+
+    public long getAccessExpiresInSeconds() {
+        return accessTokenMs / 1000;
+    }
+
+    public long getRefreshExpiresInSeconds() {
+        return refreshTokenMs / 1000;
     }
 
     /** Parse và validate access token; ném JwtException nếu không hợp lệ. */

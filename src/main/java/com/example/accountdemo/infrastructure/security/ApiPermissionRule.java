@@ -4,7 +4,7 @@ import org.springframework.util.AntPathMatcher;
 
 /**
  * Một rule map API (method + path) sang tên permission.
- * Load từ bảng permissions (cột http_method, path_pattern).
+ * Load từ bảng resources.
  */
 record ApiPermissionRule(String httpMethod, String pathPattern, String permissionName) {
 

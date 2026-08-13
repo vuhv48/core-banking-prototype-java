@@ -1,5 +1,6 @@
 package com.example.accountdemo.infrastructure.security;
 
+import com.example.accountdemo.api.common.ErrorStatus;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +19,7 @@ import java.util.List;
 /**
  * Filter 2 – Authorization.
  *
- * Đọc mapping API -> permission từ bảng permissions (http_method, path_pattern).
+ * Đọc mapping API -> permission từ bảng resources.
  * Kiểm tra user trong SecurityContext có quyền tương ứng không.
  *
  * Public paths (yaml) được bỏ qua. Không dùng @PreAuthorize.
@@ -31,6 +32,7 @@ public class AuthorizationFilter extends OncePerRequestFilter {
 
     private final ApiPermissionRuleRegistry ruleRegistry;
     private final SecurityProperties securityProperties;
+    private final JsonErrorWriter jsonErrorWriter;
 
     @Override
     protected void doFilterInternal(
@@ -57,7 +59,12 @@ public class AuthorizationFilter extends OncePerRequestFilter {
 
         var requiredPermission = ruleRegistry.findRequiredPermission(method, path);
         if (requiredPermission.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Không có rule quyền cho API này");
+            jsonErrorWriter.write(
+                    request,
+                    response,
+                    ErrorStatus.FORBIDDEN,
+                    "Không có rule quyền cho API này"
+            );
             return;
         }
 
@@ -66,8 +73,10 @@ public class AuthorizationFilter extends OncePerRequestFilter {
                 .anyMatch(auth -> auth.getAuthority().equals(permission));
 
         if (!allowed) {
-            response.sendError(
-                    HttpServletResponse.SC_FORBIDDEN,
+            jsonErrorWriter.write(
+                    request,
+                    response,
+                    ErrorStatus.FORBIDDEN,
                     "Thiếu quyền: " + permission
             );
             return;

@@ -5,14 +5,16 @@ import com.example.accountdemo.api.auth.dto.LoginResponse;
 import com.example.accountdemo.api.auth.dto.LogoutResponse;
 import com.example.accountdemo.api.auth.dto.RefreshRequest;
 import com.example.accountdemo.api.auth.dto.RefreshTokenResponse;
+import com.example.accountdemo.api.common.DomainException;
+import com.example.accountdemo.api.common.ErrorStatus;
 import com.example.accountdemo.infrastructure.persistence.security.RefreshTokenJpaEntity;
 import com.example.accountdemo.infrastructure.persistence.security.RefreshTokenJpaRepository;
 import com.example.accountdemo.infrastructure.persistence.security.UserJpaEntity;
 import com.example.accountdemo.infrastructure.persistence.security.UserJpaRepository;
 import com.example.accountdemo.infrastructure.security.JwtUtil;
 import com.example.accountdemo.infrastructure.security.LoginLogService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,9 +24,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -49,8 +48,6 @@ public class AuthController {
     /**
      * POST /api/auth/login
      * Body: { "username": "...", "password": "..." }
-     *
-     * Trả về access token (JWT) + refresh token (opaque string).
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
@@ -72,7 +69,7 @@ public class AuthController {
         String tokenHash = jwtUtil.hashToken(rawRefresh);
 
         UserJpaEntity user = userJpaRepository.findByUsername(username)
-                .orElseThrow();
+                .orElseThrow(() -> new DomainException(ErrorStatus.USER_NOT_FOUND));
 
         RefreshTokenJpaEntity tokenEntity = RefreshTokenJpaEntity.builder()
                 .user(user)
@@ -87,14 +84,19 @@ public class AuthController {
 
         loginLogService.recordSuccessfulLogin(user.getId(), username, httpRequest);
 
-        return ResponseEntity.ok(new LoginResponse(accessToken, rawRefresh, permissions));
+        return ResponseEntity.ok(new LoginResponse(
+                accessToken,
+                rawRefresh,
+                "Bearer",
+                jwtUtil.getAccessExpiresInSeconds(),
+                jwtUtil.getRefreshExpiresInSeconds(),
+                permissions
+        ));
     }
 
     /**
      * POST /api/auth/refresh
      * Body: { "refreshToken": "..." }
-     *
-     * Trả về access token mới. Refresh token cũ bị thu hồi (rotate).
      */
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponse> refresh(@RequestBody RefreshRequest request) {
@@ -107,10 +109,7 @@ public class AuthController {
         if (tokenEntity == null
                 || tokenEntity.isRevoked()
                 || tokenEntity.getExpiresAt().isBefore(Instant.now())) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Refresh token không hợp lệ hoặc đã hết hạn"
-            );
+            throw new DomainException(ErrorStatus.REFRESH_TOKEN_INVALID);
         }
 
         tokenEntity.setRevoked(true);
@@ -131,7 +130,7 @@ public class AuthController {
                             .distinct()
                             .toList();
                 })
-                .orElseThrow();
+                .orElseThrow(() -> new DomainException(ErrorStatus.USER_NOT_FOUND));
 
         String newAccessToken = jwtUtil.generateAccessToken(user.getUsername(), permissions);
 
@@ -149,17 +148,22 @@ public class AuthController {
         newToken.setUpdatedAt(LocalDateTime.now());
         refreshTokenJpaRepository.save(newToken);
 
-        return ResponseEntity.ok(new RefreshTokenResponse(newAccessToken, newRaw));
+        return ResponseEntity.ok(new RefreshTokenResponse(
+                newAccessToken,
+                newRaw,
+                "Bearer",
+                jwtUtil.getAccessExpiresInSeconds(),
+                jwtUtil.getRefreshExpiresInSeconds()
+        ));
     }
 
     /**
      * POST /api/auth/logout
-     * Thu hồi tất cả refresh token của user hiện tại.
      */
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponse> logout(Authentication authentication) {
         if (authentication == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Chưa đăng nhập");
+            throw new DomainException(ErrorStatus.UNAUTHORIZED);
         }
 
         String username = authentication.getName();

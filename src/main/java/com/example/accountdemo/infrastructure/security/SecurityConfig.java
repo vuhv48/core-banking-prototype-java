@@ -1,5 +1,6 @@
 package com.example.accountdemo.infrastructure.security;
 
+import com.example.accountdemo.api.common.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -23,8 +24,9 @@ import java.util.List;
  * Cấu hình Spring Security.
  *
  * - Public paths: application.yml (security.public-paths)
- * - API -> permission mapping: bảng permissions (http_method, path_pattern)
+ * - API -> permission mapping: bảng resources
  * - Kiểm tra quyền: AuthorizationFilter (không dùng @PreAuthorize)
+ * - 401/403 trả JSON theo ErrorStatus (giống sale-app)
  */
 @Slf4j
 @Configuration
@@ -37,6 +39,7 @@ public class SecurityConfig {
     private final AuthorizationFilter authorizationFilter;
     private final CustomUserDetailsService userDetailsService;
     private final SecurityProperties securityProperties;
+    private final JsonErrorWriter jsonErrorWriter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -47,6 +50,12 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint((request, response, authException) ->
+                                jsonErrorWriter.write(request, response, ErrorStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                jsonErrorWriter.write(request, response, ErrorStatus.FORBIDDEN))
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(publicPaths).permitAll()
                         .anyRequest().authenticated()
