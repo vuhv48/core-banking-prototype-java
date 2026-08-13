@@ -32,10 +32,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 Cần PostgreSQL, database `account_demo`. Profile `dev` load `data.sql`.
-
-```bash
-export BASE=http://localhost:8080
-```
+Base URL: `http://localhost:8080`
 
 ### User mẫu
 
@@ -45,26 +42,33 @@ export BASE=http://localhost:8080
 | `trader1` | `password123` | ROLE_USER | Đặt lệnh |
 | `readonly1` | `password123` | ROLE_READONLY | Test 403 |
 
-### Lấy token
+### Lấy token (Postman / curl)
+
+**Trader** — đặt lệnh:
 
 ```bash
-export TOKEN=$(curl -s -X POST $BASE/api/auth/login \
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"trader1","password":"password123"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
-
-export TOKEN_ADMIN=$(curl -s -X POST $BASE/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password123"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
-
-export TOKEN_RO=$(curl -s -X POST $BASE/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"readonly1","password":"password123"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
+  -d '{"username":"trader1","password":"password123"}'
 ```
 
-Response login:
+**Admin** — nạp/rút tiền:
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"password123"}'
+```
+
+**Readonly** — test 403:
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"readonly1","password":"password123"}'
+```
+
+Response:
 
 ```json
 {
@@ -76,6 +80,9 @@ Response login:
   "permissions": ["ORDER_PLACE", ...]
 }
 ```
+
+Trong Postman: copy `accessToken` → tab **Authorization** → Type **Bearer Token** → dán vào.  
+Gọi API khác thêm header: `Authorization: Bearer <accessToken>`.
 
 ### Migration bảng `resources` (DB cũ)
 
@@ -159,20 +166,22 @@ src/main/java/com/example/accountdemo/
 | `POST /api/accounts/{id}/withdraw` | ACCOUNT_WITHDRAW |
 
 ```bash
-curl -X POST $BASE/api/accounts/ACC-001/deposit \
+# Nạp tiền — dùng accessToken của admin
+curl -X POST http://localhost:8080/api/accounts/ACC-001/deposit \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN_ADMIN" \
+  -H "Authorization: Bearer <accessToken_admin>" \
   -d '{"amount": 100000, "currency": "VND"}'
 
-curl -X POST $BASE/api/accounts/ACC-001/withdraw \
+# Rút tiền — dùng accessToken của admin
+curl -X POST http://localhost:8080/api/accounts/ACC-001/withdraw \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN_ADMIN" \
+  -H "Authorization: Bearer <accessToken_admin>" \
   -d '{"amount": 50000, "currency": "VND"}'
 
-# Trader → 403
-curl -i -X POST $BASE/api/accounts/ACC-001/deposit \
+# Trader nạp tiền → 403 (dùng accessToken của trader1)
+curl -X POST http://localhost:8080/api/accounts/ACC-001/deposit \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <accessToken_trader1>" \
   -d '{"amount": 100000, "currency": "VND"}'
 ```
 
@@ -202,57 +211,59 @@ curl -i -X POST $BASE/api/accounts/ACC-001/deposit \
 
 ### Scenario nghiệp vụ (có Bearer)
 
+> Thay `<accessToken_trader1>` / `<accessToken_readonly1>` bằng token lấy từ login.
+
 **1) Bán 5 @ 60M → PENDING (hoặc FILLED nếu đã có mua)**
 
 ```bash
-curl -X POST $BASE/api/orders \
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <accessToken_trader1>" \
   -d '{"accountId":"ACC-002","side":"SELL","orderType":"LIMIT","baseCurrency":"BTC","quoteCurrency":"VND","quantity":5,"price":60000000}'
 ```
 
 **2) Mua 10 @ 60M → khớp 5, PARTIALLY_FILLED + log Trade executed**
 
 ```bash
-curl -X POST $BASE/api/orders \
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <accessToken_trader1>" \
   -d '{"accountId":"ACC-001","side":"BUY","orderType":"LIMIT","baseCurrency":"BTC","quoteCurrency":"VND","quantity":10,"price":60000000}'
 ```
 
 **3) Mua @ 50M → không khớp, PENDING**
 
 ```bash
-curl -X POST $BASE/api/orders \
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <accessToken_trader1>" \
   -d '{"accountId":"ACC-001","side":"BUY","orderType":"LIMIT","baseCurrency":"BTC","quoteCurrency":"VND","quantity":10,"price":50000000}'
 ```
 
 **4) Bán 5 @ 60M → khớp hết phần mua còn lại**
 
 ```bash
-curl -X POST $BASE/api/orders \
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <accessToken_trader1>" \
   -d '{"accountId":"ACC-002","side":"SELL","orderType":"LIMIT","baseCurrency":"BTC","quoteCurrency":"VND","quantity":5,"price":60000000}'
 ```
 
 **5) Cặp ETH/VND chưa mở → ORDER_BOOK_NOT_OPEN**
 
 ```bash
-curl -i -X POST $BASE/api/orders \
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <accessToken_trader1>" \
   -d '{"accountId":"ACC-001","side":"BUY","orderType":"LIMIT","baseCurrency":"ETH","quoteCurrency":"VND","quantity":1,"price":1000000}'
 ```
 
 **6) Readonly đặt lệnh → FORBIDDEN**
 
 ```bash
-curl -i -X POST $BASE/api/orders \
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN_RO" \
+  -H "Authorization: Bearer <accessToken_readonly1>" \
   -d '{"accountId":"ACC-001","side":"BUY","orderType":"LIMIT","baseCurrency":"BTC","quoteCurrency":"VND","quantity":1,"price":60000000}'
 ```
 
@@ -342,22 +353,18 @@ security:
 
 ```bash
 # Login
-curl -s -X POST $BASE/api/auth/login \
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"trader1","password":"password123"}'
 
-# Refresh
-export REFRESH=$(curl -s -X POST $BASE/api/auth/login \
+# Refresh — dán refreshToken lấy từ login
+curl -X POST http://localhost:8080/api/auth/refresh \
   -H "Content-Type: application/json" \
-  -d '{"username":"trader1","password":"password123"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['refreshToken'])")
+  -d '{"refreshToken":"<refreshToken>"}'
 
-curl -s -X POST $BASE/api/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d "{\"refreshToken\":\"$REFRESH\"}"
-
-# Logout
-curl -s -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN"
+# Logout — dán accessToken
+curl -X POST http://localhost:8080/api/auth/logout \
+  -H "Authorization: Bearer <accessToken_trader1>"
 ```
 
 ```sql
@@ -399,15 +406,18 @@ Pattern sale-app: `ErrorStatus` + `DomainException` + `RestExceptionHandler` + `
 | ORDER_BOOK_NOT_OPEN | 400 | Cặp chưa mở |
 
 ```bash
-curl -i -X POST $BASE/api/auth/login \
+# Sai mật khẩu → AUTH_FAILED
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"trader1","password":"sai-mat-khau"}'
 
-curl -i -X POST $BASE/api/orders \
+# Không token → UNAUTHORIZED
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
   -d '{"accountId":"ACC-001","side":"BUY","orderType":"LIMIT","baseCurrency":"BTC","quoteCurrency":"VND","quantity":1,"price":60000000}'
 
-curl -i -X POST $BASE/api/auth/refresh \
+# Refresh giả → REFRESH_TOKEN_INVALID
+curl -X POST http://localhost:8080/api/auth/refresh \
   -H "Content-Type: application/json" \
   -d '{"refreshToken":"token-gia"}'
 ```
@@ -429,41 +439,47 @@ curl -i -X POST $BASE/api/auth/refresh \
 
 ---
 
-## 10. Kịch bản test đầy đủ
+## 10. Kịch bản test đầy đủ (Postman)
+
+Thứ tự: login → copy token → gọi từng API bên dưới.
 
 ```bash
-export BASE=http://localhost:8080
-
-export TOKEN=$(curl -s -X POST $BASE/api/auth/login \
+# 1) Login trader1
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"trader1","password":"password123"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
+  -d '{"username":"trader1","password":"password123"}'
 
-export TOKEN_ADMIN=$(curl -s -X POST $BASE/api/auth/login \
+# 2) Login admin
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password123"}' \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['accessToken'])")
+  -d '{"username":"admin","password":"password123"}'
 
-curl -i -X POST $BASE/api/auth/login \
+# 3) Test lỗi login
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"trader1","password":"sai"}'
 
-curl -X POST $BASE/api/accounts/ACC-001/deposit \
+# 4) Nạp tiền (Bearer accessToken của admin)
+curl -X POST http://localhost:8080/api/accounts/ACC-001/deposit \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN_ADMIN" \
+  -H "Authorization: Bearer <accessToken_admin>" \
   -d '{"amount":100000,"currency":"VND"}'
 
-curl -X POST $BASE/api/orders \
+# 5) Đặt bán (Bearer accessToken của trader1)
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <accessToken_trader1>" \
   -d '{"accountId":"ACC-002","side":"SELL","orderType":"LIMIT","baseCurrency":"BTC","quoteCurrency":"VND","quantity":5,"price":60000000}'
 
-curl -X POST $BASE/api/orders \
+# 6) Đặt mua (Bearer accessToken của trader1)
+curl -X POST http://localhost:8080/api/orders \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer <accessToken_trader1>" \
   -d '{"accountId":"ACC-001","side":"BUY","orderType":"LIMIT","baseCurrency":"BTC","quoteCurrency":"VND","quantity":10,"price":60000000}'
 
-curl -X POST $BASE/api/auth/logout -H "Authorization: Bearer $TOKEN"
+# 7) Logout
+curl -X POST http://localhost:8080/api/auth/logout \
+  -H "Authorization: Bearer <accessToken_trader1>"
 ```
 
 ---
