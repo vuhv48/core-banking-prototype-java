@@ -1,6 +1,6 @@
 package com.example.accountdemo.infrastructure.config;
 
-import com.example.accountdemo.domain.exchange.OrderMatchingService;
+import com.example.accountdemo.domain.exchange.matching.OrderMatchingService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

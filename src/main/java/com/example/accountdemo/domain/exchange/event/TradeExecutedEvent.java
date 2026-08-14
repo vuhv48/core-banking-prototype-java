@@ -1,8 +1,8 @@
 package com.example.accountdemo.domain.exchange.event;
 
-import com.example.accountdemo.domain.exchange.Price;
-import com.example.accountdemo.domain.exchange.Quantity;
-import com.example.accountdemo.domain.exchange.TradingPair;
+import com.example.accountdemo.domain.exchange.shared.Price;
+import com.example.accountdemo.domain.exchange.shared.Quantity;
+import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
 package com.example.accountdemo.infrastructure.persistence.exchange;
 
-import com.example.accountdemo.domain.exchange.Order;
-import com.example.accountdemo.domain.exchange.OrderRepository;
+import com.example.accountdemo.domain.exchange.order.model.Order;
+import com.example.accountdemo.domain.exchange.order.OrderRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;

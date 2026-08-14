@@ -2,7 +2,7 @@ package com.example.accountdemo.application;
 
 import com.example.accountdemo.api.common.DomainException;
 import com.example.accountdemo.api.common.ErrorStatus;
-import com.example.accountdemo.domain.exchange.Order;
+import com.example.accountdemo.domain.exchange.order.model.Order;
 import com.example.accountdemo.infrastructure.persistence.security.UserJpaEntity;
 import com.example.accountdemo.infrastructure.persistence.security.UserJpaRepository;
 import org.springframework.stereotype.Component;

@@ -1,6 +1,6 @@
 package com.example.accountdemo.infrastructure.event;
 
-import com.example.accountdemo.domain.exchange.DomainEventPublisher;
+import com.example.accountdemo.domain.exchange.event.DomainEventPublisher;
 import com.example.accountdemo.domain.exchange.event.TradeExecutedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

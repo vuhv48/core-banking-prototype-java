@@ -1,8 +1,8 @@
 package com.example.accountdemo.infrastructure.persistence.account;
 
-import com.example.accountdemo.domain.account.Account;
+import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.account.AccountRepository;
-import com.example.accountdemo.domain.account.Balance;
+import com.example.accountdemo.domain.account.model.Balance;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Iterator;

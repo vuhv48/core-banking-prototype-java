@@ -1,8 +1,8 @@
 package com.example.accountdemo.application;
 
-import com.example.accountdemo.domain.account.Account;
+import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.account.AccountRepository;
-import com.example.accountdemo.domain.account.Money;
+import com.example.accountdemo.domain.account.model.Money;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 

@@ -1,9 +1,9 @@
 package com.example.accountdemo.infrastructure.persistence.exchange;
 
-import com.example.accountdemo.domain.exchange.Order;
-import com.example.accountdemo.domain.exchange.OrderSide;
-import com.example.accountdemo.domain.exchange.OrderStatus;
-import com.example.accountdemo.domain.exchange.OrderType;
+import com.example.accountdemo.domain.exchange.order.model.Order;
+import com.example.accountdemo.domain.exchange.order.model.OrderSide;
+import com.example.accountdemo.domain.exchange.order.model.OrderStatus;
+import com.example.accountdemo.domain.exchange.order.model.OrderType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +51,7 @@ class OrderMapperTest {
     @Test
     void roundTrip_shouldPreserveOrderState() {
         Order original = ExchangeTestData.limitBuyOrder();
-        original.match(new com.example.accountdemo.domain.exchange.Quantity(30));
+        original.match(new com.example.accountdemo.domain.exchange.shared.Quantity(30));
 
         Order restored = orderMapper.toDomain(orderMapper.toEntity(original));
 

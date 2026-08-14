@@ -1,12 +1,12 @@
 package com.example.accountdemo.infrastructure.config;
 
-import com.example.accountdemo.domain.account.Account;
+import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.account.AccountRepository;
-import com.example.accountdemo.domain.account.AccountStatus;
-import com.example.accountdemo.domain.account.Balance;
-import com.example.accountdemo.domain.exchange.OrderBook;
-import com.example.accountdemo.domain.exchange.OrderBookRepository;
-import com.example.accountdemo.domain.exchange.TradingPair;
+import com.example.accountdemo.domain.account.model.AccountStatus;
+import com.example.accountdemo.domain.account.model.Balance;
+import com.example.accountdemo.domain.exchange.orderbook.model.OrderBook;
+import com.example.accountdemo.domain.exchange.orderbook.OrderBookRepository;
+import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import com.example.accountdemo.infrastructure.persistence.account.AccountJpaRepository;
 import java.util.LinkedHashMap;
 import java.util.Map;

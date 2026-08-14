@@ -1,9 +1,9 @@
 package com.example.accountdemo.infrastructure.persistence.exchange;
 
-import com.example.accountdemo.domain.exchange.Order;
-import com.example.accountdemo.domain.exchange.OrderBook;
-import com.example.accountdemo.domain.exchange.OrderBookRepository;
-import com.example.accountdemo.domain.exchange.TradingPair;
+import com.example.accountdemo.domain.exchange.order.model.Order;
+import com.example.accountdemo.domain.exchange.orderbook.model.OrderBook;
+import com.example.accountdemo.domain.exchange.orderbook.OrderBookRepository;
+import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;

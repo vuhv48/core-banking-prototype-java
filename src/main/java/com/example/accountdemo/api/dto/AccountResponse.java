@@ -1,7 +1,7 @@
 package com.example.accountdemo.api.dto;
 
-import com.example.accountdemo.domain.account.Account;
-import com.example.accountdemo.domain.account.Balance;
+import com.example.accountdemo.domain.account.model.Account;
+import com.example.accountdemo.domain.account.model.Balance;
 import java.util.List;
 
 public record AccountResponse(

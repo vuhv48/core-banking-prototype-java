@@ -2,8 +2,8 @@ package com.example.accountdemo.application;
 
 import com.example.accountdemo.api.common.DomainException;
 import com.example.accountdemo.api.common.ErrorStatus;
-import com.example.accountdemo.domain.exchange.Order;
-import com.example.accountdemo.domain.exchange.OrderRepository;
+import com.example.accountdemo.domain.exchange.order.model.Order;
+import com.example.accountdemo.domain.exchange.order.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
 package com.example.accountdemo.infrastructure.persistence.exchange;
 
-import com.example.accountdemo.domain.exchange.ExecutedTrade;
-import com.example.accountdemo.domain.exchange.TradeRepository;
+import com.example.accountdemo.domain.exchange.trade.model.ExecutedTrade;
+import com.example.accountdemo.domain.exchange.trade.TradeRepository;
 import java.time.LocalDateTime;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;

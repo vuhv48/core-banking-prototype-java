@@ -1,8 +1,8 @@
 package com.example.accountdemo.infrastructure.persistence.exchange;
 
-import com.example.accountdemo.domain.exchange.Order;
-import com.example.accountdemo.domain.exchange.OrderSide;
-import com.example.accountdemo.domain.exchange.OrderStatus;
+import com.example.accountdemo.domain.exchange.order.model.Order;
+import com.example.accountdemo.domain.exchange.order.model.OrderSide;
+import com.example.accountdemo.domain.exchange.order.model.OrderStatus;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

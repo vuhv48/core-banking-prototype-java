@@ -4,7 +4,7 @@ import com.example.accountdemo.api.dto.AccountResponse;
 import com.example.accountdemo.application.DepositApplicationService;
 import com.example.accountdemo.application.GetAccountApplicationService;
 import com.example.accountdemo.application.WithdrawApplicationService;
-import com.example.accountdemo.domain.account.Account;
+import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.infrastructure.security.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

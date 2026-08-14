@@ -2,22 +2,22 @@ package com.example.accountdemo.application;
 
 import com.example.accountdemo.api.common.DomainException;
 import com.example.accountdemo.api.common.ErrorStatus;
-import com.example.accountdemo.domain.account.Account;
+import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.account.AccountRepository;
-import com.example.accountdemo.domain.account.Money;
-import com.example.accountdemo.domain.exchange.DomainEventPublisher;
-import com.example.accountdemo.domain.exchange.MatchResult;
-import com.example.accountdemo.domain.exchange.Order;
-import com.example.accountdemo.domain.exchange.OrderBook;
-import com.example.accountdemo.domain.exchange.OrderBookRepository;
-import com.example.accountdemo.domain.exchange.OrderMatchingService;
-import com.example.accountdemo.domain.exchange.OrderRepository;
-import com.example.accountdemo.domain.exchange.OrderSide;
-import com.example.accountdemo.domain.exchange.OrderType;
-import com.example.accountdemo.domain.exchange.Price;
-import com.example.accountdemo.domain.exchange.Quantity;
-import com.example.accountdemo.domain.exchange.Trade;
-import com.example.accountdemo.domain.exchange.TradingPair;
+import com.example.accountdemo.domain.account.model.Money;
+import com.example.accountdemo.domain.exchange.event.DomainEventPublisher;
+import com.example.accountdemo.domain.exchange.matching.MatchResult;
+import com.example.accountdemo.domain.exchange.order.model.Order;
+import com.example.accountdemo.domain.exchange.orderbook.model.OrderBook;
+import com.example.accountdemo.domain.exchange.orderbook.OrderBookRepository;
+import com.example.accountdemo.domain.exchange.matching.OrderMatchingService;
+import com.example.accountdemo.domain.exchange.order.OrderRepository;
+import com.example.accountdemo.domain.exchange.order.model.OrderSide;
+import com.example.accountdemo.domain.exchange.order.model.OrderType;
+import com.example.accountdemo.domain.exchange.shared.Price;
+import com.example.accountdemo.domain.exchange.shared.Quantity;
+import com.example.accountdemo.domain.exchange.matching.Trade;
+import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import com.example.accountdemo.domain.exchange.event.TradeExecutedEvent;
 import java.time.Instant;
 import java.util.HashMap;
@@ -109,7 +109,7 @@ public class PlaceOrderApplicationService {
     }
 
     private void releaseCancelledRemainder(Order order) {
-        if (order.getStatus() != com.example.accountdemo.domain.exchange.OrderStatus.CANCELLED) {
+        if (order.getStatus() != com.example.accountdemo.domain.exchange.order.model.OrderStatus.CANCELLED) {
             return;
         }
         long remaining = order.getLockedAmountRemaining();

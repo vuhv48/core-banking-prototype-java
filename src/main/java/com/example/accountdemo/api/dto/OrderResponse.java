@@ -1,6 +1,6 @@
 package com.example.accountdemo.api.dto;
 
-import com.example.accountdemo.domain.exchange.Order;
+import com.example.accountdemo.domain.exchange.order.model.Order;
 
 public record OrderResponse(
         String orderId,

@@ -1,8 +1,8 @@
 package com.example.accountdemo.infrastructure.persistence.account;
 
-import com.example.accountdemo.domain.account.Account;
-import com.example.accountdemo.domain.account.AccountStatus;
-import com.example.accountdemo.domain.account.Balance;
+import com.example.accountdemo.domain.account.model.Account;
+import com.example.accountdemo.domain.account.model.AccountStatus;
+import com.example.accountdemo.domain.account.model.Balance;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.stereotype.Component;

@@ -137,6 +137,8 @@ Lỗi: `RestExceptionHandler` / `JsonErrorWriter` → `ApiResponse` + `ErrorStat
 
 ## 3. Cấu trúc thư mục
 
+Package domain theo **bounded context → feature/aggregate** (không tách `vo/` / `enum/` / `repo/`).
+
 ```
 src/main/java/com/example/accountdemo/
 ├── api/
@@ -146,8 +148,22 @@ src/main/java/com/example/accountdemo/
 │   └── error/         # RestExceptionHandler
 ├── application/
 ├── domain/
-│   ├── account/
-│   └── exchange/
+│   ├── account/                 # BC Bank
+│   │   ├── AccountRepository    # port
+│   │   └── model/               # Account, Balance, Money, AccountStatus
+│   └── exchange/                # BC Exchange
+│       ├── order/
+│       │   ├── OrderRepository  # port
+│       │   └── model/           # Order, OrderSide, OrderType, OrderStatus
+│       ├── orderbook/
+│       │   ├── OrderBookRepository
+│       │   └── model/           # OrderBook
+│       ├── matching/            # Domain Service: OrderMatchingService, MatchResult, Trade
+│       ├── trade/
+│       │   ├── TradeRepository
+│       │   └── model/           # ExecutedTrade
+│       ├── shared/              # VO dùng chung: Price, Quantity, TradingPair
+│       └── event/               # TradeExecutedEvent, DomainEventPublisher
 └── infrastructure/
     ├── persistence/
     │   ├── account/, exchange/
@@ -186,7 +202,7 @@ curl -X POST http://localhost:8080/api/accounts/ACC-001/deposit \
   -d '{"amount": 100000, "currency": "VND"}'
 ```
 
-> Exchange chưa trừ số dư Account khi đặt lệnh. Hướng dẫn làm: **§14**.
+> Place order đã reserve/settle ví. Chi tiết: **§14**.
 
 ---
 
@@ -487,15 +503,17 @@ curl -X POST http://localhost:8080/api/auth/logout \
 
 ## 11. Phân loại DDD
 
-| Class | Loại |
-|-------|------|
-| Account, Order, OrderBook | Aggregate Root |
-| Money, Price, Quantity, Trade | Value Object |
-| OrderMatchingService | Domain Service |
-| MatchResult | Result object |
-| TradeExecutedEvent | Domain Event |
-| PlaceOrderApplicationService | Application Service |
-| JwtAuthFilter, resources, ErrorStatus | Infrastructure / API |
+| Class | Loại | Package |
+|-------|------|---------|
+| Account | Aggregate Root | `domain.account.model` |
+| Order, OrderBook | Aggregate Root | `domain.exchange.order.model` / `orderbook.model` |
+| Money, Balance, Price, Quantity, Trade, TradingPair | Value Object | `account.model` / `exchange.shared` / `matching` |
+| OrderMatchingService | Domain Service | `domain.exchange.matching` |
+| MatchResult | Result object | `domain.exchange.matching` |
+| TradeExecutedEvent | Domain Event | `domain.exchange.event` |
+| *Repository | Port | cạnh `model/` của feature |
+| PlaceOrderApplicationService | Application Service | `application` |
+| JwtAuthFilter, resources, ErrorStatus | Infrastructure / API | `infrastructure` / `api` |
 
 ---
 

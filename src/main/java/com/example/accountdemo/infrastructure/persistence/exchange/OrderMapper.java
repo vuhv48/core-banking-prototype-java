@@ -1,12 +1,12 @@
 package com.example.accountdemo.infrastructure.persistence.exchange;
 
-import com.example.accountdemo.domain.exchange.Order;
-import com.example.accountdemo.domain.exchange.OrderSide;
-import com.example.accountdemo.domain.exchange.OrderStatus;
-import com.example.accountdemo.domain.exchange.OrderType;
-import com.example.accountdemo.domain.exchange.Price;
-import com.example.accountdemo.domain.exchange.Quantity;
-import com.example.accountdemo.domain.exchange.TradingPair;
+import com.example.accountdemo.domain.exchange.order.model.Order;
+import com.example.accountdemo.domain.exchange.order.model.OrderSide;
+import com.example.accountdemo.domain.exchange.order.model.OrderStatus;
+import com.example.accountdemo.domain.exchange.order.model.OrderType;
+import com.example.accountdemo.domain.exchange.shared.Price;
+import com.example.accountdemo.domain.exchange.shared.Quantity;
+import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import org.springframework.stereotype.Component;
 
 /**

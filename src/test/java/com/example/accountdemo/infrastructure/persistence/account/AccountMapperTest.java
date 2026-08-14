@@ -1,9 +1,9 @@
 package com.example.accountdemo.infrastructure.persistence.account;
 
-import com.example.accountdemo.domain.account.Account;
-import com.example.accountdemo.domain.account.AccountStatus;
-import com.example.accountdemo.domain.account.Balance;
-import com.example.accountdemo.domain.account.Money;
+import com.example.accountdemo.domain.account.model.Account;
+import com.example.accountdemo.domain.account.model.AccountStatus;
+import com.example.accountdemo.domain.account.model.Balance;
+import com.example.accountdemo.domain.account.model.Money;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
