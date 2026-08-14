@@ -4,7 +4,9 @@ import lombok.Getter;
 
 /**
  * Exception nghiệp vụ mang mã {@link ErrorStatus}.
- * RestExceptionHandler map thành JSON {@link ApiResponse}.
+ *
+ * <p><b>Vì sao cần class này:</b> tầng application/domain ném lỗi có code; RestExceptionHandler
+ * map thành JSON {@link ApiResponse} thay vì stack trace thô.
  */
 @Getter
 public class DomainException extends RuntimeException {

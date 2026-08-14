@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST API ví / tài khoản: xem số dư, nạp, rút.
+ *
+ * <p><b>Vì sao cần class này:</b> biên giới HTTP — nhận request, gọi application service,
+ * không chứa business rule (rule nằm trong domain Account).
+ */
 @RestController
 @RequestMapping("/api/accounts")
 @RequiredArgsConstructor
@@ -24,12 +30,14 @@ public class AccountController {
     private final DepositApplicationService depositApplicationService;
     private final GetAccountApplicationService getAccountApplicationService;
 
+    /** Xem số dư (available/locked) theo accountId. */
     @GetMapping("/{accountId}")
     public ResponseEntity<AccountResponse> get(@PathVariable String accountId) {
         Account account = getAccountApplicationService.get(SecurityUtils.currentUsername(), accountId);
         return ResponseEntity.ok(AccountResponse.from(account));
     }
 
+    /** Rút tiền từ available. */
     @PostMapping("/{accountId}/withdraw")
     public ResponseEntity<Void> withdraw(
             @PathVariable String accountId,
@@ -39,6 +47,7 @@ public class AccountController {
         return ResponseEntity.ok().build();
     }
 
+    /** Nạp tiền vào available. */
     @PostMapping("/{accountId}/deposit")
     public ResponseEntity<Void> deposit(
             @PathVariable String accountId,
@@ -48,6 +57,7 @@ public class AccountController {
         return ResponseEntity.ok().build();
     }
 
+    /** Body nạp/rút: số tiền + currency. */
     public record AmountRequest(long amount, String currency) {
     }
 }

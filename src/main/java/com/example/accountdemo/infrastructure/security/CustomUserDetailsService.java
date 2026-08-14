@@ -15,10 +15,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Load thông tin user từ DB khi đăng nhập.
+ * Load UserDetails từ DB khi đăng nhập.
  *
- * Quyền hiệu lực = quyền từ roles + quyền gán trực tiếp (directPermissions).
- * Không dùng @PreAuthorize; authorities chỉ được dùng để build JWT claim.
+ * <p><b>Vì sao cần class này:</b> gộp quyền từ roles + directPermissions thành authorities để build JWT.
  */
 @Service
 @RequiredArgsConstructor
@@ -26,6 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserJpaRepository userJpaRepository;
 
+    /** Load user + authorities (role permissions ∪ direct permissions). */
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

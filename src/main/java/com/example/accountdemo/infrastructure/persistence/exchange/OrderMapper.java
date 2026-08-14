@@ -10,7 +10,9 @@ import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import org.springframework.stereotype.Component;
 
 /**
- * Chuyển đổi giữa domain Order và OrderJpaEntity.
+ * Map domain {@code Order} ↔ {@link OrderJpaEntity}.
+ *
+ * <p><b>Vì sao cần class này:</b> chuyển value object/enum domain sang cột primitive khi save/load.
  */
 @Component
 public class OrderMapper {

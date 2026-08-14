@@ -5,7 +5,10 @@ import lombok.Getter;
 import com.example.accountdemo.domain.exchange.order.model.Order;
 
 /**
- * Result object — output 1 lần gọi match (không phải bản ghi DB).
+ * Result object — output một lần gọi {@code match} (không phải bản ghi DB).
+ *
+ * <p><b>Vì sao cần class này:</b> gom danh sách Trade đã khớp + mọi Order bị đổi status
+ * để Application biết save gì / settle gì — matching không tự persist.
  *
  * <pre>
  * trades = [
@@ -25,6 +28,7 @@ public final class MatchResult {
     /** Mọi Order bị đổi (lệnh mới + đối ứng) — Application cần save. */
     private final List<Order> affectedOrders;
 
+    /** Đóng băng hai list — ngoài không sửa kết quả matching. */
     public MatchResult(List<Trade> trades, List<Order> affectedOrders) {
         this.trades = List.copyOf(trades);
         this.affectedOrders = List.copyOf(affectedOrders);

@@ -21,12 +21,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import java.util.List;
 
 /**
- * Cấu hình Spring Security.
+ * Cấu hình Spring Security: filter chain, public paths, 401/403 JSON.
  *
- * - Public paths: application.yml (security.public-paths)
- * - API -> permission mapping: bảng resources
- * - Kiểm tra quyền: AuthorizationFilter (không dùng @PreAuthorize)
- * - 401/403 trả JSON theo ErrorStatus (giống sale-app)
+ * <p><b>Vì sao cần class này:</b> gắn JwtAuthFilter + AuthorizationFilter; public-paths từ yaml,
+ * permission từ bảng resources — không {@code @PreAuthorize}.
  */
 @Slf4j
 @Configuration
@@ -41,6 +39,7 @@ public class SecurityConfig {
     private final SecurityProperties securityProperties;
     private final JsonErrorWriter jsonErrorWriter;
 
+    /** Filter chain: JWT → authorization theo resources; 401/403 JSON. */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         String[] publicPaths = securityProperties.getPublicPaths().toArray(String[]::new);
@@ -66,6 +65,7 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /** Provider login username/password + BCrypt. */
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
@@ -74,12 +74,14 @@ public class SecurityConfig {
         return provider;
     }
 
+    /** Expose AuthenticationManager cho AuthController.login. */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {
         return config.getAuthenticationManager();
     }
 
+    /** BCrypt encoder cho passwordHash. */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

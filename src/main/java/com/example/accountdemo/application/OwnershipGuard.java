@@ -9,8 +9,10 @@ import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Ownership: user có users.account_id thì chỉ được thao tác account/order đó.
- * User không gắn account (admin) → được thao tác hộ.
+ * Triển khai OwnershipChecker: user gắn account chỉ được thao tác account/order đó;
+ * user không gắn account (admin) được thao tác hộ.
+ * <p><b>Vì sao cần class này:</b> ngăn trader A đụng tài khoản / lệnh của trader B,
+ * đồng thời cho phép admin hỗ trợ khi không bind account.
  */
 @Component
 @RequiredArgsConstructor
@@ -18,6 +20,9 @@ public class OwnershipGuard implements OwnershipChecker {
 
     private final UserJpaRepository userJpaRepository;
 
+    /**
+     * So khớp accountId với account gắn user; lệch thì ACCOUNT_NOT_OWNED.
+     */
     @Override
     public void requireAccountAccess(String username, String accountId) {
         String linked = linkedAccountId(username);
@@ -26,6 +31,9 @@ public class OwnershipGuard implements OwnershipChecker {
         }
     }
 
+    /**
+     * Ủy quyền kiểm tra ownership qua accountId của lệnh.
+     */
     @Override
     public void requireOrderAccess(String username, Order order) {
         requireAccountAccess(username, order.getAccountId());

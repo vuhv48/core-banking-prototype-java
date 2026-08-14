@@ -5,11 +5,17 @@ import com.example.accountdemo.api.common.ErrorStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+/**
+ * Helper lấy username hiện tại từ SecurityContext.
+ *
+ * <p><b>Vì sao cần class này:</b> controller/application lấy identity thống nhất, tránh lặp cast Authentication.
+ */
 public final class SecurityUtils {
 
     private SecurityUtils() {
     }
 
+    /** Username đang đăng nhập; ném UNAUTHORIZED nếu chưa authenticate. */
     public static String currentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null

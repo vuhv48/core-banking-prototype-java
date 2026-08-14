@@ -22,9 +22,8 @@ class AccountMapperTest {
 
         assertEquals("ACC-001", entity.getId());
         assertEquals("ACTIVE", entity.getStatus());
-        assertEquals(100_000, entity.getBalanceAmount());
-        assertEquals("VND", entity.getBalanceCurrency());
         assertEquals(1, entity.getBalances().size());
+        assertEquals("VND", entity.getBalances().get(0).getCurrency());
         assertEquals(100_000, entity.getBalances().get(0).getAvailableAmount());
         assertEquals(0, entity.getBalances().get(0).getLockedAmount());
     }

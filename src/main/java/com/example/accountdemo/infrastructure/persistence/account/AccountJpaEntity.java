@@ -12,6 +12,11 @@ import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+/**
+ * JPA entity bảng {@code accounts} — trạng thái ví + danh sách balances.
+ *
+ * <p><b>Vì sao cần class này:</b> persistence của aggregate Account; tách khỏi domain model thuần.
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -22,10 +27,7 @@ public class AccountJpaEntity extends BaseEntity {
     private String id;
     private String status;
 
-    /** Legacy columns — giữ để tương thích DB cũ; nguồn sự thật là account_balances. */
-    private Long balanceAmount;
-    private String balanceCurrency;
-
+    /** Số dư theo currency — nguồn sự thật (bảng account_balances). */
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<AccountBalanceJpaEntity> balances = new ArrayList<>();
 }

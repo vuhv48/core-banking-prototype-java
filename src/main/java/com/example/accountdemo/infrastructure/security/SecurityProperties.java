@@ -6,10 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Bind cấu hình security.* từ application.yml.
+ * Bind {@code security.*} từ application.yml (public-paths...).
  *
- * public-paths: danh sách path không cần JWT (permitAll).
- * Thêm path mới trong yaml mà không cần sửa SecurityConfig.
+ * <p><b>Vì sao cần class này:</b> thêm path permitAll trong yaml mà không sửa SecurityConfig.
  */
 @ConfigurationProperties(prefix = "security")
 public class SecurityProperties {

@@ -7,18 +7,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
+/**
+ * Map qua lại domain {@code Account} và {@link AccountJpaEntity} (+ balances).
+ *
+ * <p><b>Vì sao cần class này:</b> giữ domain sạch khỏi JPA annotation; adapter chỉ gọi mapper.
+ */
 @Component
 public class AccountMapper {
 
+    /** Domain → JPA (kèm rows account_balances). */
     public AccountJpaEntity toEntity(Account account) {
         AccountJpaEntity entity = new AccountJpaEntity();
         entity.setId(account.getAccountId());
         entity.setStatus(account.getStatus().name());
-
-        // Sync legacy columns với available VND (nếu có) để DB cũ không null.
-        long vndAvailable = account.getAvailable("VND").getAmount();
-        entity.setBalanceAmount(vndAvailable);
-        entity.setBalanceCurrency("VND");
 
         for (Balance balance : account.getHoldings().values()) {
             AccountBalanceJpaEntity row = new AccountBalanceJpaEntity();
@@ -32,10 +33,11 @@ public class AccountMapper {
         return entity;
     }
 
+    /** JPA → Domain từ account_balances. */
     public Account toDomain(AccountJpaEntity entity) {
         Map<String, Balance> holdings = new LinkedHashMap<>();
 
-        if (entity.getBalances() != null && !entity.getBalances().isEmpty()) {
+        if (entity.getBalances() != null) {
             for (AccountBalanceJpaEntity row : entity.getBalances()) {
                 if (row.isDeleted()) {
                     continue;
@@ -45,12 +47,6 @@ public class AccountMapper {
                         new Balance(row.getCurrency(), row.getAvailableAmount(), row.getLockedAmount())
                 );
             }
-        } else if (entity.getBalanceCurrency() != null && entity.getBalanceAmount() != null) {
-            // Fallback DB chưa migrate sang account_balances
-            holdings.put(
-                    entity.getBalanceCurrency(),
-                    new Balance(entity.getBalanceCurrency(), entity.getBalanceAmount(), 0)
-            );
         }
 
         return new Account(entity.getId(), AccountStatus.valueOf(entity.getStatus()), holdings);

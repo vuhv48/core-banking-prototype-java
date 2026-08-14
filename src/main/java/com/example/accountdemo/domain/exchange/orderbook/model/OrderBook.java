@@ -12,7 +12,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 
 /**
- * Aggregate Root — một bản ghi sổ lệnh (một cặp).
+ * Aggregate Root — sổ lệnh của một cặp giao dịch.
+ *
+ * <p><b>Vì sao cần class này:</b> giữ danh sách bid/ask đã sort để matching tìm đối ứng
+ * tốt nhất. Không trừ tiền — chỉ xếp hàng / gỡ lệnh; khớp do {@code OrderMatchingService}.
  *
  * <pre>
  * tradingPair = BTC/VND
@@ -20,7 +23,7 @@ import lombok.Getter;
  * sellOrders  = [ORD-SELL-001 SELL LIMIT  qty=2  price=61_000_000  PENDING]
  * </pre>
  *
- * Không trừ tiền. Khớp do OrderMatchingService. getBuy/SellOrders() trả copy.
+ * {@code getBuy/SellOrders()} trả copy — ngoài không sửa list nội bộ.
  */
 @Getter
 public class OrderBook {
@@ -34,6 +37,7 @@ public class OrderBook {
     @Getter(AccessLevel.NONE)
     private List<Order> sellOrders;
 
+    /** Tạo sổ rỗng cho một cặp — chưa có lệnh chờ. */
     public OrderBook(TradingPair pair) {
         if (pair == null) {
             throw new IllegalArgumentException("tradingPair không được null");
@@ -43,6 +47,10 @@ public class OrderBook {
         this.sellOrders = new ArrayList<>();
     }
 
+    /**
+     * Đưa lệnh vào đúng phía (BUY → bid, SELL → ask) và sort giá.
+     * Nghĩa nghiệp vụ: lệnh đang xếp hàng chờ đối ứng.
+     */
     public void addOrder(Order order) {
         if (order == null) {
             throw new IllegalArgumentException("order không được null");
@@ -66,6 +74,7 @@ public class OrderBook {
         }
     }
 
+    /** Gỡ lệnh khỏi sổ (đã FILLED hoặc cancel) — tránh khớp lại vòng sau. */
     public void removeOrder(String orderId) {
         if (orderId == null || orderId.isBlank()) {
             throw new IllegalArgumentException("orderId không được null hoặc rỗng");
@@ -77,6 +86,7 @@ public class OrderBook {
         }
     }
 
+    /** Giá mua tốt nhất (cao nhất) trên sổ — dùng tham khảo / UI. */
     public Optional<Price> getBestBid() {
         return buyOrders.stream()
                 .map(Order::getPrice)
@@ -84,6 +94,7 @@ public class OrderBook {
                 .max(Comparator.comparingLong(Price::getValue));
     }
 
+    /** Giá bán tốt nhất (thấp nhất) trên sổ — dùng tham khảo / UI. */
     public Optional<Price> getBestAsk() {
         return sellOrders.stream()
                 .map(Order::getPrice)
@@ -91,10 +102,12 @@ public class OrderBook {
                 .min(Comparator.comparingLong(Price::getValue));
     }
 
+    /** Copy list lệnh mua đang chờ — ngoài không phá sort nội bộ. */
     public List<Order> getBuyOrders() {
         return List.copyOf(buyOrders);
     }
 
+    /** Copy list lệnh bán đang chờ — ngoài không phá sort nội bộ. */
     public List<Order> getSellOrders() {
         return List.copyOf(sellOrders);
     }

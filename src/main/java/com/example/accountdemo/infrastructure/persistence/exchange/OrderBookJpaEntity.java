@@ -7,6 +7,11 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+/**
+ * JPA entity bảng {@code order_books} — metadata cặp giao dịch.
+ *
+ * <p><b>Vì sao cần class này:</b> lưu cặp đã mở; danh sách lệnh nằm bảng {@code orders}, không embed ở đây.
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity

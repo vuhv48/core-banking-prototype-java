@@ -12,8 +12,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Cache rules đọc từ bảng resources lúc startup.
- * Một permission có thể map nhiều resource (nhiều path).
+ * Cache rules đọc từ bảng {@code resources} lúc startup.
+ *
+ * <p><b>Vì sao cần class này:</b> tránh query DB mỗi request; một permission có thể map nhiều path.
  */
 @Slf4j
 @Component
@@ -24,6 +25,7 @@ public class ApiPermissionRuleRegistry {
 
     private List<ApiPermissionRule> rules = List.of();
 
+    /** Nạp/cache rules từ DB (gọi lúc startup). */
     @PostConstruct
     public void loadRules() {
         rules = resourceJpaRepository.findAllEnabledWithPermission().stream()
@@ -37,6 +39,7 @@ public class ApiPermissionRuleRegistry {
         );
     }
 
+    /** Permission cần cho method+path (rule cụ thể nhất thắng). */
     public Optional<String> findRequiredPermission(String httpMethod, String requestPath) {
         return rules.stream()
                 .filter(rule -> rule.matches(httpMethod, requestPath))

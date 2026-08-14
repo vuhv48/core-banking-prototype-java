@@ -3,7 +3,10 @@ package com.example.accountdemo.domain.exchange.shared;
 import lombok.Getter;
 
 /**
- * Value Object — một bản ghi số lượng (≥ 0).
+ * Value Object — số lượng mua/bán (≥ 0).
+ *
+ * <p><b>Vì sao cần class này:</b> cộng/trừ filled/remaining an toàn; không cho âm;
+ * {@code isZero} / {@code isGreaterThanOrEqual} phục vụ rule khớp lệnh.
  *
  * <pre>
  * value = 1
@@ -14,12 +17,7 @@ public final class Quantity {
 
     private final long value;
 
-    /**
-     * Tạo số lượng mới.
-     * - Gán value vào field.
-     * - Validate: value phải >= 0 → throw IllegalArgumentException nếu < 0.
-     * Ví dụ: new Quantity(100) hợp lệ, new Quantity(-1) không hợp lệ.
-     */
+    /** Tạo số lượng; cho phép 0 (filled ban đầu / remaining hết), không cho âm. */
     public Quantity(long value) {
         if (value < 0) {
             throw new IllegalArgumentException("Quantity value cannot be negative");
@@ -33,24 +31,13 @@ public final class Quantity {
         }
     }
 
-    /**
-     * Cộng hai số lượng.
-     * - other không được null → throw IllegalArgumentException.
-     * - Trả về Quantity mới với value = this.value + other.value.
-     * Ví dụ: 100 + 50 = 150.
-     */
+    /** Cộng hai số lượng — trả Quantity mới (vd tăng filled sau match). */
     public Quantity plus(Quantity other) {
         ensureNotNull(other);
         return new Quantity(this.value + other.value);
     }
 
-    /**
-     * Trừ hai số lượng.
-     * - other không được null → throw IllegalArgumentException.
-     * - Trả về Quantity mới với value = this.value - other.value.
-     * - Kết quả có thể bằng 0; nếu âm thì throw (tùy thiết kế).
-     * Ví dụ: 100 - 30 = 70.
-     */
+    /** Trừ hai số lượng — không cho kết quả âm (vd remaining = total − filled). */
     public Quantity minus(Quantity other) {
         ensureNotNull(other);
         if (this.value < other.value) {
@@ -59,22 +46,13 @@ public final class Quantity {
         return new Quantity(this.value - other.value);
     }
 
-    /**
-     * So sánh this >= other.
-     * - other không được null → throw IllegalArgumentException.
-     * - Trả về true nếu this.value >= other.value.
-     * Dùng trong Order.match() để kiểm tra executedQuantity không vượt remaining.
-     */
+    /** True nếu this ≥ other — chặn khớp vượt remaining trong {@code Order.match}. */
     public boolean isGreaterThanOrEqual(Quantity other) {
         ensureNotNull(other);
         return this.value >= other.value;
     }
 
-    /**
-     * Kiểm tra số lượng bằng 0.
-     * - Trả về true nếu value == 0.
-     * Dùng để biết order đã khớp hết chưa.
-     */
+    /** True nếu = 0 — biết lệnh đã khớp hết / không còn gì để match. */
     public boolean isZero() {
         return this.value == 0;
     }

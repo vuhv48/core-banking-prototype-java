@@ -8,8 +8,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Bảng users – lưu thông tin đăng nhập.
- * Tách khỏi Account domain để đảm bảo tính độc lập.
+ * JPA entity bảng {@code users} — thông tin đăng nhập (+ {@code account_id} tùy chọn).
+ *
+ * <p><b>Vì sao cần class này:</b> tách identity khỏi Account domain; ownership gắn qua account_id.
  */
 @Entity
 @Table(name = "users")

@@ -3,15 +3,16 @@ package com.example.accountdemo.domain.account.model;
 import lombok.Getter;
 
 /**
- * Value Object — một bản ghi số dư theo currency (trong Account).
+ * Value Object — một dòng số dư theo currency bên trong {@link Account}.
+ *
+ * <p><b>Vì sao cần:</b> tách {@code available} / {@code locked} để đặt lệnh không trừ thẳng,
+ * cancel/settle mới biết trả hay chi bao nhiêu. Immutable — mỗi thao tác trả Balance mới.
  *
  * <pre>
  * currency  = VND
  * available = 10_000_000
  * locked    = 0
  * </pre>
- *
- * Immutable: reserve/release/consumeLocked/credit trả Balance mới. available ≥ 0, locked ≥ 0.
  */
 @Getter
 public final class Balance {
@@ -35,10 +36,12 @@ public final class Balance {
         this.locked = locked;
     }
 
+    /** Dòng số dư rỗng khi account chưa từng có currency này. */
     public static Balance zero(String currency) {
         return new Balance(currency, 0, 0);
     }
 
+    /** available → locked (đặt lệnh). */
     public Balance reserve(long amount) {
         requirePositive(amount);
         if (available < amount) {
@@ -47,6 +50,7 @@ public final class Balance {
         return new Balance(currency, available - amount, locked + amount);
     }
 
+    /** locked → available (hủy / thừa). */
     public Balance release(long amount) {
         requirePositive(amount);
         if (locked < amount) {
@@ -55,6 +59,7 @@ public final class Balance {
         return new Balance(currency, available + amount, locked - amount);
     }
 
+    /** locked giảm khi đã chi cho đối phương (khớp lệnh). */
     public Balance consumeLocked(long amount) {
         requirePositive(amount);
         if (locked < amount) {
@@ -63,11 +68,13 @@ public final class Balance {
         return new Balance(currency, available, locked - amount);
     }
 
+    /** Cộng available (nạp hoặc nhận sau khớp). */
     public Balance credit(long amount) {
         requirePositive(amount);
         return new Balance(currency, available + amount, locked);
     }
 
+    /** Trừ available (rút tiền). */
     public Balance debitAvailable(long amount) {
         requirePositive(amount);
         if (available < amount) {

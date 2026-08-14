@@ -17,12 +17,10 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Filter 2 – Authorization.
+ * Filter 2 – Authorization: kiểm tra permission theo bảng resources.
  *
- * Đọc mapping API -> permission từ bảng resources.
- * Kiểm tra user trong SecurityContext có quyền tương ứng không.
- *
- * Public paths (yaml) được bỏ qua. Không dùng @PreAuthorize.
+ * <p><b>Vì sao cần class này:</b> phân quyền tập trung theo DB, không dùng {@code @PreAuthorize};
+ * public paths (yaml) được bỏ qua.
  */
 @Component
 @RequiredArgsConstructor
@@ -34,6 +32,7 @@ public class AuthorizationFilter extends OncePerRequestFilter {
     private final SecurityProperties securityProperties;
     private final JsonErrorWriter jsonErrorWriter;
 
+    /** Kiểm tra permission theo resources; bỏ qua public path / anonymous. */
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,

@@ -8,7 +8,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Domain Event — một bản ghi “vừa khớp xong” (để log / Kafka).
+ * Domain Event — “vừa khớp xong” (để log / Kafka).
+ *
+ * <p><b>Vì sao cần class này:</b> thông báo side-effect sau settle mà không gắn logic
+ * vào Aggregate. Payload đủ để subscriber biết trade nào, cặp nào, giá/qty.
  *
  * <pre>
  * tradeId     = TRD-001
@@ -32,6 +35,7 @@ public final class TradeExecutedEvent {
     private final Price price;
     private final Instant occurredAt;
 
+    /** Chuỗi đọc được khi log event (không dùng cho persistence). */
     @Override
     public String toString() {
         return "TradeExecutedEvent{"

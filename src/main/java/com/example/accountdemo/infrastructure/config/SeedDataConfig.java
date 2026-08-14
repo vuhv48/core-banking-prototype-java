@@ -17,8 +17,10 @@ import org.springframework.context.annotation.Profile;
 
 /**
  * Nạp dữ liệu mẫu qua repository port khi chạy profile {@code seed}.
+ * Chạy: {@code mvn spring-boot:run -Dspring-boot.run.profiles=seed}
  *
- * Chạy: mvn spring-boot:run -Dspring-boot.run.profiles=seed
+ * <p><b>Vì sao cần class này:</b> môi trường demo/dev có account + order book sẵn mà không phụ thuộc
+ * chỉ vào {@code data.sql}.
  */
 @Configuration
 @Profile("seed")
@@ -26,6 +28,7 @@ public class SeedDataConfig {
 
     private static final TradingPair BTC_VND = new TradingPair("BTC", "VND");
 
+    /** Runner seed account + BTC/VND order book nếu DB trống. */
     @Bean
     CommandLineRunner seedData(
             AccountJpaRepository accountJpaRepository,

@@ -15,17 +15,9 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Filter 1 – Authentication.
+ * Filter 1 – Authentication: validate Bearer JWT rồi set SecurityContext.
  *
- * Đọc header "Authorization: Bearer <token>", validate JWT,
- * rồi đặt Authentication vào SecurityContext.
- *
- * Sau filter này, SecurityContext chứa:
- *   principal = username
- *   authorities = danh sách quyền lấy từ JWT claim "permissions"
- *
- * Filter này KHÔNG kiểm tra path/method; việc đó thuộc về AuthorizationFilter
- * được cấu hình trong SecurityConfig.
+ * <p><b>Vì sao cần class này:</b> mọi request API bảo vệ nhận diện user/permissions trước AuthorizationFilter.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,6 +25,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
+    /** Đọc Bearer JWT (nếu có) và gắn Authentication vào context. */
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,

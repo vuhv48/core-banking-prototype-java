@@ -14,6 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Application Service — use case hủy lệnh chưa khớp xong.
+ * <p><b>Vì sao cần class này:</b> gom ownership, gỡ khỏi order book, và hoàn locked
+ * trong một giao dịch — không để API tự xử lý từng bước.
+ */
 @Service
 @RequiredArgsConstructor
 public class CancelOrderApplicationService {
@@ -23,6 +28,9 @@ public class CancelOrderApplicationService {
     private final AccountRepository accountRepository;
     private final OwnershipChecker ownershipGuard;
 
+    /**
+     * Hủy lệnh: kiểm tra quyền → cancel domain → bỏ khỏi book → release số dư treo còn lại.
+     */
     @Transactional
     public Order cancel(String username, String orderId) {
         Order order = orderRepository.findById(orderId);

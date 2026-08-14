@@ -12,7 +12,9 @@ import org.springframework.stereotype.Repository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Adapter triển khai OrderBookRepository bằng Spring Data JPA.
+ * Adapter triển khai {@code OrderBookRepository} bằng Spring Data JPA.
+ *
+ * <p><b>Vì sao cần class này:</b> load sổ + lệnh chưa final thành domain OrderBook cho matching.
  */
 @Repository
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class OrderBookRepositoryJpaImpl implements OrderBookRepository {
     private final OrderBookMapper orderBookMapper;
     private final OrderMapper orderMapper;
 
+    /** Load sổ + lệnh chưa final theo cặp tiền. */
     @Override
     public OrderBook findByTradingPair(TradingPair pair) {
         return orderBookJpaRepository
@@ -42,6 +45,7 @@ public class OrderBookRepositoryJpaImpl implements OrderBookRepository {
                 .orElse(null);
     }
 
+    /** Lưu metadata sổ và sync các lệnh đang trên sổ. */
     @Override
     public void save(OrderBook orderBook) {
         OrderBookJpaEntity entity = orderBookMapper.toEntity(orderBook);

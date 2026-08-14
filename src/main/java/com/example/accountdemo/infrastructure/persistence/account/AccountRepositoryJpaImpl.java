@@ -12,6 +12,11 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Adapter triển khai {@code AccountRepository} bằng Spring Data JPA.
+ *
+ * <p><b>Vì sao cần class này:</b> domain chỉ biết port; class này sync holdings ↔ bảng account_balances.
+ */
 @Repository
 @RequiredArgsConstructor
 public class AccountRepositoryJpaImpl implements AccountRepository {
@@ -19,6 +24,7 @@ public class AccountRepositoryJpaImpl implements AccountRepository {
     private final AccountJpaRepository accountJpaRepository;
     private final AccountMapper accountMapper;
 
+    /** Tìm ví theo id (bỏ soft-deleted); null nếu không có. */
     @Override
     @Transactional(readOnly = true)
     public Account findById(String accountId) {
@@ -28,6 +34,7 @@ public class AccountRepositoryJpaImpl implements AccountRepository {
                 .orElse(null);
     }
 
+    /** Insert hoặc cập nhật status + sync balances. */
     @Override
     @Transactional
     public void save(Account account) {
@@ -37,8 +44,6 @@ public class AccountRepositoryJpaImpl implements AccountRepository {
         if (existing.isPresent()) {
             AccountJpaEntity current = existing.get();
             current.setStatus(account.getStatus().name());
-            current.setBalanceAmount(account.getAvailable("VND").getAmount());
-            current.setBalanceCurrency("VND");
             current.setUpdatedAt(now);
             syncBalances(current, account, now);
             accountJpaRepository.save(current);

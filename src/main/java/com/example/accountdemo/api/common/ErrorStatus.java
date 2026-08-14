@@ -8,7 +8,9 @@ import java.util.stream.Collectors;
 
 /**
  * Mã lỗi API thống nhất (HTTP status + code + message mặc định).
- * Pattern lấy từ sale-app: {@code ErrorStatus} + {@code DomainException} + {@code RestExceptionHandler}.
+ *
+ * <p><b>Vì sao cần class này:</b> một nơi định nghĩa contract lỗi; DomainException + RestExceptionHandler
+ * và filter security đều dùng chung để client nhận code ổn định.
  */
 public enum ErrorStatus {
 
@@ -55,18 +57,22 @@ public enum ErrorStatus {
         this.defaultMessage = defaultMessage;
     }
 
+    /** HTTP status tương ứng mã lỗi. */
     public int httpStatus() {
         return httpStatus;
     }
 
+    /** Mã lỗi string gửi về client. */
     public String code() {
         return code;
     }
 
+    /** Message mặc định khi caller không truyền message riêng. */
     public String defaultMessage() {
         return defaultMessage;
     }
 
+    /** Tra ErrorStatus theo code (dùng khi map DomainException). */
     public static Optional<ErrorStatus> resolve(String code) {
         if (code == null) {
             return Optional.empty();

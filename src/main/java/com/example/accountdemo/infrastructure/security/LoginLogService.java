@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 
 /**
  * Ghi audit log khi user đăng nhập thành công.
+ *
+ * <p><b>Vì sao cần class này:</b> AuthController không viết JPA trực tiếp cho login_logs.
  */
 @Service
 @RequiredArgsConstructor
@@ -17,6 +19,7 @@ public class LoginLogService {
 
     private final LoginLogJpaRepository loginLogJpaRepository;
 
+    /** Persist một dòng login_logs (IP, User-Agent). */
     public void recordSuccessfulLogin(Long userId, String username, HttpServletRequest request) {
         LoginLogJpaEntity log = LoginLogJpaEntity.builder()
                 .userId(userId)

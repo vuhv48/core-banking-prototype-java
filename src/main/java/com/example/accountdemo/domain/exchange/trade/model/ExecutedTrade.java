@@ -9,6 +9,10 @@ import com.example.accountdemo.domain.exchange.shared.TradingPair;
 /**
  * Entity — một bản ghi lịch sử khớp (bảng trades).
  *
+ * <p><b>Vì sao cần class này:</b> audit / đối soát sau settle — khác {@link
+ * com.example.accountdemo.domain.exchange.matching.Trade} (VO tạm trên RAM lúc match).
+ * Có tradeId + account hai bên để truy vết ví.
+ *
  * <pre>
  * tradeId         = TRD-001
  * buyOrderId      = ORD-BUY-001
@@ -19,8 +23,6 @@ import com.example.accountdemo.domain.exchange.shared.TradingPair;
  * quantity        = 1
  * price           = 60_000_000
  * </pre>
- *
- * Khác {@link com.example.accountdemo.domain.exchange.matching.Trade}: VO trên RAM lúc match; cái này lưu DB sau settle.
  */
 @Getter
 @RequiredArgsConstructor

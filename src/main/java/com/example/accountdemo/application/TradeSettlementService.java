@@ -17,7 +17,10 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Tất toán ví khi khớp lệnh + lưu bảng trades.
+ * Tất toán ví hai bên khi khớp lệnh và ghi bản ghi ExecutedTrade.
+ * <p><b>Vì sao cần class này:</b> matching chỉ tạo Trade trên sổ lệnh; cần bước riêng
+ * để chuyển locked → số dư thực và lưu lịch sử giao dịch — tách khỏi PlaceOrder
+ * để reuse khi có thêm luồng khớp sau này.
  */
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,9 @@ public class TradeSettlementService {
     private final AccountRepository accountRepository;
     private final TradeRepository tradeRepository;
 
+    /**
+     * Settle một Trade: buyer/seller consume locked, credit tài sản nhận được, lưu trades.
+     */
     public void settle(Trade trade, TradingPair tradingPair, Map<String, Order> ordersById) {
         Order buyOrder = requireOrder(ordersById, trade.getBuyOrderId());
         Order sellOrder = requireOrder(ordersById, trade.getSellOrderId());

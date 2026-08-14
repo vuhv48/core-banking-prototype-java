@@ -13,7 +13,9 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Ghi lỗi JSON thống nhất từ filter / entry point (trước khi vào controller).
+ * Ghi lỗi JSON thống nhất từ filter / entry point (trước controller).
+ *
+ * <p><b>Vì sao cần class này:</b> 401/403 từ security cùng shape {@link com.example.accountdemo.api.common.ApiResponse}.
  */
 @Component
 @RequiredArgsConstructor
@@ -21,11 +23,13 @@ public class JsonErrorWriter {
 
     private final ObjectMapper objectMapper;
 
+    /** Ghi response lỗi theo ErrorStatus (message mặc định). */
     public void write(HttpServletRequest request, HttpServletResponse response, ErrorStatus status)
             throws IOException {
         write(request, response, status, status.defaultMessage());
     }
 
+    /** Ghi response lỗi với message tùy chỉnh. */
     public void write(
             HttpServletRequest request,
             HttpServletResponse response,

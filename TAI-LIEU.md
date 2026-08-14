@@ -1,6 +1,6 @@
 # TAI-LIEU — Bank + Exchange (DDD / Hexagonal)
 
-*File tài liệu duy nhất của project. Gồm: kiến trúc, domain, login/RBAC/resources, ErrorStatus, curl test, migration.*
+*File tài liệu duy nhất của project. Gồm: kiến trúc, domain, login/RBAC, ErrorStatus, curl, DB.*
 
 ---
 
@@ -20,28 +20,38 @@
 11. [Phân loại DDD](#11-phân-loại-ddd)
 12. [Lộ trình](#12-lộ-trình)
 13. [File code tra cứu](#13-file-code-tra-cứu)
-14. [Hướng dẫn Wallet / Settlement / Cancel / Ownership](#14-hướng-dẫn-wallet--settlement--cancel--ownership)
+14. [Wallet / Settlement / Cancel / Ownership](#14-hướng-dẫn-wallet--settlement--cancel--ownership)
 
 ---
 
 ## 0. Chuẩn bị & login
 
-### Chạy app
+### DB + chạy app
 
 ```bash
+# Tạo DB nếu chưa có
+psql -U postgres -c "CREATE DATABASE account_demo;"
+
+# Schema + seed (file SQL duy nhất trong scripts/)
+psql -U postgres -d account_demo -f scripts/init-full.sql
+
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-Cần PostgreSQL, database `account_demo`. Profile `dev` load `data.sql`.
+DBeaver: connect `account_demo` → Execute `scripts/init-full.sql`.
+
 Base URL: `http://localhost:8080`
+
+Profile `dev` còn load `src/main/resources/data.sql` (`ON CONFLICT`) — trùng seed thường không sao.
 
 ### User mẫu
 
-| Username | Password | Role | Dùng để |
-|----------|----------|------|---------|
-| `admin` | `password123` | ROLE_ADMIN | Nạp/rút, toàn quyền |
-| `trader1` | `password123` | ROLE_USER | Đặt lệnh |
-| `readonly1` | `password123` | ROLE_READONLY | Test 403 |
+| Username | Password | Role | Account | Dùng để |
+|----------|----------|------|---------|---------|
+| `admin` | `password123` | ROLE_ADMIN | — | Nạp/rút, toàn quyền |
+| `trader1` | `password123` | ROLE_USER | ACC-001 | Đặt lệnh |
+| `trader2` | `password123` | ROLE_USER | ACC-002 | Đặt lệnh đối ứng |
+| `readonly1` | `password123` | ROLE_READONLY | — | Test 403 |
 
 ### Lấy token (Postman / curl)
 
@@ -85,15 +95,7 @@ Response:
 Trong Postman: copy `accessToken` → tab **Authorization** → Type **Bearer Token** → dán vào.  
 Gọi API khác thêm header: `Authorization: Bearer <accessToken>`.
 
-### Migration bảng `resources` (DB cũ)
-
-```bash
-psql -U postgres -d account_demo -f scripts/migrate-resources.sql
-```
-
-Hoặc mở `scripts/migrate-resources.sql` trong DBeaver → Execute.
-
-Kiểm tra:
+Kiểm tra RBAC sau seed:
 
 ```sql
 SELECT r.http_method, r.path_pattern, p.name AS permission
@@ -539,7 +541,7 @@ curl -X POST http://localhost:8080/api/auth/logout \
 - [ ] BUY MARKET (đang reject `MARKET_BUY_NOT_SUPPORTED`)
 - [ ] Kafka / Outbox
 
-**DB cũ:** chạy `scripts/migrate-wallet-settlement.sql` rồi restart.
+**DB:** `scripts/init-full.sql` (schema + seed). Không còn file migrate cũ.
 
 ---
 
@@ -556,26 +558,26 @@ curl -X POST http://localhost:8080/api/auth/logout \
 | `AuthController.java` | login / refresh / logout |
 | `ErrorStatus.java` | Mã lỗi |
 | `RestExceptionHandler.java` | Map exception → JSON |
-| `scripts/migrate-resources.sql` | Migration DB → resources |
+| `scripts/init-full.sql` | Schema + seed DB đầy đủ |
+| `src/main/resources/data.sql` | Seed bổ sung khi profile `dev` |
 | **`TAI-LIEU.md`** | **File tài liệu duy nhất** |
 
 ---
 
 ## 14. Hướng dẫn Wallet / Settlement / Cancel / Ownership
 
-> **Đã implement trong code.** Section này vẫn là tài liệu thiết kế / cách nghĩ.
-> Migration DB cũ: `scripts/migrate-wallet-settlement.sql`.
+> **Đã implement.** Section này là cách nghĩ thiết kế (đọc để hiểu / phỏng vấn), không phải todo.
 
-### 14.0 Hiện trạng (gap)
+### 14.0 Hiện trạng (đã có trong code)
 
-| Việc | Hiện tại |
-|------|----------|
-| Số dư Account | 1 field `balance` (VND) — **không** có locked / multi-currency |
-| Place order | Không đụng Account; `accountId` lấy từ body |
-| Khớp lệnh | `Trade` trên RAM + `TradeExecutedEvent` **chỉ log** |
-| Cancel / GET order | Domain `Order.cancel()` có sẵn; **chưa** app service / API |
-| Bảng `trades` | **Chưa có** |
-| Ownership | `users.account_id` đã seed (`trader1` → `ACC-001`) nhưng **không dùng** khi đặt lệnh |
+| Việc | Trạng thái |
+|------|------------|
+| Số dư Account | `account_balances`: available + locked, multi-currency |
+| Place order | ownership → reserve → match → settle |
+| Khớp lệnh | `Trade` RAM + persist bảng `trades` + event (log) |
+| Cancel / GET order | API + release lock còn lại |
+| Ownership | `users.account_id` (`trader1`→ACC-001, `trader2`→ACC-002) |
+| DB | `scripts/init-full.sql` |
 
 ### 14.1 Quyết định thiết kế (đọc trước khi code)
 
@@ -675,13 +677,13 @@ Place / settle / cancel trong **một** `@Transactional` (cùng DB): save order 
 
 #### Phase 1 — Domain Account: holdings + reserve/release/consume/credit
 
-**Layer:** `domain/account` + persistence + migrate.
+**Layer:** `domain/account` + persistence.
 
 1. Refactor `Account`: bỏ single `balance` → holdings theo currency (hoặc giữ `getBalance()` = available VND để tương thích tạm, rồi migrate hết).
 2. Implement 4 method trên; rule: FROZEN không reserve/withdraw.
 3. Cập nhật `deposit` / `withdraw` chỉ đụng `available`.
 4. JPA: bảng `account_balances` **hoặc** cột `locked_*` + multi-row.
-5. Script migrate + cập nhật `data.sql`.
+5. Schema/seed: `scripts/init-full.sql` (+ `data.sql` profile dev).
 6. Unit test domain: reserve hết available → fail; release đúng; consumeLocked không trả available.
 
 **Không** sửa PlaceOrder ở phase này.
@@ -783,7 +785,7 @@ Domain đã có `Order.cancel()` — làm tiếp:
 | domain/account | `Balance`, `reserve` / `release` / `consumeLocked` / `credit`; refactor `Account` |
 | domain/exchange | (optional) field lock trên `Order`; enrich `TradeExecutedEvent` |
 | application | `OwnershipGuard`, sửa `PlaceOrderApplicationService`, `TradeSettlementService`, `CancelOrderApplicationService`, `GetOrderApplicationService` |
-| infrastructure | JPA `account_balances`, `trades`; migrate SQL; `UserAccountResolver` |
+| infrastructure | JPA `account_balances`, `trades`; `scripts/init-full.sql`; `UserAccountResolver` |
 | api | `DELETE/GET` orders; `GET` account; bỏ hoặc siết `accountId` trong place body |
 | common | `ErrorStatus` mới |
 | test | Unit Account; integration place → balance đổi; cancel → release |

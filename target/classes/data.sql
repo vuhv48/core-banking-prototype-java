@@ -1,11 +1,11 @@
 -- Seed data — Spring Boot tự load khi chạy với profile dev
 -- (spring.jpa.defer-datasource-initialization=true)
 
-INSERT INTO accounts (id, balance_amount, balance_currency, status, deleted, created_at, updated_at)
+INSERT INTO accounts (id, status, deleted, created_at, updated_at)
 VALUES
-    ('ACC-001', 10000000, 'VND', 'ACTIVE', false, NOW(), NOW()),
-    ('ACC-002',  5000000, 'VND', 'ACTIVE', false, NOW(), NOW()),
-    ('ACC-003',  2000000, 'VND', 'FROZEN', false, NOW(), NOW())
+    ('ACC-001', 'ACTIVE', false, NOW(), NOW()),
+    ('ACC-002', 'ACTIVE', false, NOW(), NOW()),
+    ('ACC-003', 'FROZEN', false, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Số dư theo currency (nguồn sự thật cho wallet)

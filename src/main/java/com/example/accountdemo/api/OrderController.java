@@ -23,6 +23,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST API lệnh giao dịch: đặt, xem, hủy.
+ *
+ * <p><b>Vì sao cần class này:</b> biên giới HTTP cho exchange — map DTO sang value object domain,
+ * rồi ủy thác Place/Get/Cancel application service (matching/settlement không nằm ở đây).
+ */
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -32,6 +38,7 @@ public class OrderController {
     private final CancelOrderApplicationService cancelOrderApplicationService;
     private final GetOrderApplicationService getOrderApplicationService;
 
+    /** Đặt lệnh BUY/SELL LIMIT (hoặc SELL MARKET). */
     @PostMapping
     public ResponseEntity<PlaceOrderResponse> placeOrder(@RequestBody PlaceOrderRequest request) {
         String username = SecurityUtils.currentUsername();
@@ -57,12 +64,14 @@ public class OrderController {
         ));
     }
 
+    /** Xem chi tiết một lệnh theo orderId. */
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderResponse> getOrder(@PathVariable String orderId) {
         Order order = getOrderApplicationService.get(SecurityUtils.currentUsername(), orderId);
         return ResponseEntity.ok(OrderResponse.from(order));
     }
 
+    /** Hủy lệnh còn mở; phần lock chưa khớp được release. */
     @DeleteMapping("/{orderId}")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable String orderId) {
         Order order = cancelOrderApplicationService.cancel(SecurityUtils.currentUsername(), orderId);

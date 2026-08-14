@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Application Service — điều phối use case rút tiền.
- * KHÔNG chứa business logic; chỉ gọi domain và repository.
+ * <p><b>Vì sao cần class này:</b> nối API với domain Account.withdraw; rule số dư / đóng băng
+ * nằm trong Aggregate, service chỉ điều phối persistence.
  */
 @Service
 @RequiredArgsConstructor
@@ -17,13 +18,7 @@ public class WithdrawApplicationService {
     private final AccountRepository accountRepository;
 
     /**
-     * Use case: rút tiền từ tài khoản.
-     * Các bước (chỉ điều phối, không có if business rule):
-     * 1. Tạo Money từ amount + currency.
-     * 2. Account account = accountRepository.findById(accountId).
-     * 3. account.withdraw(money) — business rule nằm trong Account.
-     * 4. accountRepository.save(account).
-     * Nếu account không tồn tại: xử lý ở findById hoặc throw ở đây (không phải business rule).
+     * Rút amount/currency khỏi tài khoản; giảm available nếu đủ điều kiện.
      */
     public void withdraw(String accountId, long amount, String currency) {
         Money money = new Money(amount, currency);

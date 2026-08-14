@@ -5,6 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
+/**
+ * Spring Data JPA cho {@link UserJpaEntity}.
+ *
+ * <p><b>Vì sao cần class này:</b> load user kèm roles/permissions cho login và JWT claims.
+ */
 public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
 
     /**
@@ -18,7 +23,9 @@ public interface UserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
     })
     Optional<UserJpaEntity> findByUsername(String username);
 
+    /** Username đã tồn tại chưa. */
     boolean existsByUsername(String username);
 
+    /** Email đã tồn tại chưa (đăng ký / validation). */
     boolean existsByEmail(String email);
 }

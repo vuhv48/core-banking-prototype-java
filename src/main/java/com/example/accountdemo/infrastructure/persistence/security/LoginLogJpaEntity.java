@@ -6,8 +6,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Audit log mỗi lần user đăng nhập thành công.
- * Tương tự admin_login_logs trong các hệ thống khác, nhưng ghi cho mọi user.
+ * JPA entity bảng {@code login_logs} — audit đăng nhập thành công.
+ *
+ * <p><b>Vì sao cần class này:</b> ghi dấu mỗi lần login (user, IP, UA) phục vụ audit/bảo mật.
  */
 @Entity
 @Table(name = "login_logs")

@@ -20,6 +20,11 @@ import lombok.EqualsAndHashCode;
         name = "account_balances",
         uniqueConstraints = @UniqueConstraint(columnNames = {"account_id", "currency"})
 )
+/**
+ * JPA entity bảng {@code account_balances} — số dư available/locked theo currency.
+ *
+ * <p><b>Vì sao cần class này:</b> map multi-currency wallet — nguồn sự thật available/locked.
+ */
 public class AccountBalanceJpaEntity extends BaseEntity {
 
     @Id

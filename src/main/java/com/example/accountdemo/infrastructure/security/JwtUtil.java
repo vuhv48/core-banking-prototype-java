@@ -15,13 +15,9 @@ import java.util.HexFormat;
 import java.util.List;
 
 /**
- * Utility tạo và kiểm tra JWT access token, và hash refresh token.
+ * Tạo/parse JWT access token và hash refresh token.
  *
- * Access token chứa:
- *   - sub: username
- *   - permissions: danh sách tên quyền hiệu lực
- *
- * Refresh token gốc chỉ tồn tại trong response; DB chỉ lưu SHA-256 hash.
+ * <p><b>Vì sao cần class này:</b> một chỗ quản lý secret, TTL, claim permissions và SHA-256 refresh.
  */
 @Component
 public class JwtUtil {
@@ -66,10 +62,12 @@ public class JwtUtil {
         return refreshTokenMs;
     }
 
+    /** TTL access token (giây) — trả về client trong login/refresh response. */
     public long getAccessExpiresInSeconds() {
         return accessTokenMs / 1000;
     }
 
+    /** TTL refresh token (giây). */
     public long getRefreshExpiresInSeconds() {
         return refreshTokenMs / 1000;
     }
@@ -83,6 +81,7 @@ public class JwtUtil {
                 .getPayload();
     }
 
+    /** Token còn hạn và chữ ký hợp lệ? */
     public boolean isTokenValid(String token) {
         try {
             parseAccessToken(token);
@@ -92,10 +91,12 @@ public class JwtUtil {
         }
     }
 
+    /** Lấy username (sub) từ access token. */
     public String getUsernameFromToken(String token) {
         return parseAccessToken(token).getSubject();
     }
 
+    /** Lấy claim permissions từ access token. */
     @SuppressWarnings("unchecked")
     public List<String> getPermissionsFromToken(String token) {
         return (List<String>) parseAccessToken(token).get("permissions");

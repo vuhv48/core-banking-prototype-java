@@ -3,7 +3,10 @@ package com.example.accountdemo.domain.exchange.shared;
 import lombok.Getter;
 
 /**
- * Value Object — một bản ghi giá (số nguyên > 0).
+ * Value Object — giá giao dịch (số nguyên &gt; 0).
+ *
+ * <p><b>Vì sao cần class này:</b> không để {@code long} trần làm giá — bắt buộc &gt; 0
+ * và so sánh có nghĩa (best bid/ask, price compatible khi match).
  *
  * <pre>
  * value = 60_000_000
@@ -14,12 +17,7 @@ public final class Price {
 
     private final long value;
 
-    /**
-     * Tạo giá mới.
-     * - Gán value vào field.
-     * - Validate: value phải > 0 → throw IllegalArgumentException nếu <= 0.
-     * Ví dụ: new Price(50000) hợp lệ, new Price(0) hoặc new Price(-1) không hợp lệ.
-     */
+    /** Tạo giá; phải &gt; 0 (không cho giá 0 / âm). */
     public Price(long value) {
         if (value <= 0) {
             throw new IllegalArgumentException("Giá phải lớn hơn 0");
@@ -27,23 +25,13 @@ public final class Price {
         this.value = value;
     }
 
-    /**
-     * So sánh this có lớn hơn other không.
-     * - other không được null → throw IllegalArgumentException.
-     * - Trả về true nếu this.value > other.value.
-     * Dùng trong OrderBook để tìm best bid (giá mua cao nhất).
-     */
+    /** True nếu this &gt; other — dùng tìm best bid (giá mua cao nhất). */
     public boolean isGreaterThan(Price other) {
         ensureNotNull(other);
         return this.value > other.value;
     }
 
-    /**
-     * So sánh this có nhỏ hơn other không.
-     * - other không được null → throw IllegalArgumentException.
-     * - Trả về true nếu this.value < other.value.
-     * Dùng trong OrderBook để tìm best ask (giá bán thấp nhất).
-     */
+    /** True nếu this &lt; other — dùng tìm best ask (giá bán thấp nhất). */
     public boolean isLessThan(Price other) {
         ensureNotNull(other);
         return this.value < other.value;

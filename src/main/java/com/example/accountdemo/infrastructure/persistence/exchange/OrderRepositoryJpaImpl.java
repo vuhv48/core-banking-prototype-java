@@ -8,7 +8,9 @@ import org.springframework.stereotype.Repository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Adapter triển khai OrderRepository bằng Spring Data JPA.
+ * Adapter triển khai {@code OrderRepository} bằng Spring Data JPA.
+ *
+ * <p><b>Vì sao cần class này:</b> đóng port domain Order; application không phụ thuộc Spring Data.
  */
 @Repository
 @RequiredArgsConstructor
@@ -17,6 +19,7 @@ public class OrderRepositoryJpaImpl implements OrderRepository {
     private final OrderJpaRepository orderJpaRepository;
     private final OrderMapper orderMapper;
 
+    /** Tìm lệnh theo id (bỏ soft-deleted). */
     @Override
     public Order findById(String orderId) {
         return orderJpaRepository.findById(orderId)
@@ -25,6 +28,7 @@ public class OrderRepositoryJpaImpl implements OrderRepository {
                 .orElse(null);
     }
 
+    /** Insert hoặc cập nhật lệnh (giữ audit created*). */
     @Override
     public void save(Order order) {
         OrderJpaEntity entity = orderMapper.toEntity(order);

@@ -7,6 +7,11 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+/**
+ * JPA entity bảng {@code trades} — giao dịch đã khớp.
+ *
+ * <p><b>Vì sao cần class này:</b> lưu lịch sử fill sau settlement; tách khỏi Trade domain tạm thời trên RAM.
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity

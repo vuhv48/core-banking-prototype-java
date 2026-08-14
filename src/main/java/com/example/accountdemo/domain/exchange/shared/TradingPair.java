@@ -3,14 +3,17 @@ package com.example.accountdemo.domain.exchange.shared;
 import lombok.Getter;
 
 /**
- * Value Object — một bản ghi cặp giao dịch.
+ * Value Object — cặp giao dịch (base/quote).
+ *
+ * <p><b>Vì sao cần class này:</b> định danh một thị trường (vd BTC/VND); OrderBook
+ * và lệnh phải cùng pair. Hai currency khác nhau — tránh "BTC/BTC".
  *
  * <pre>
  * baseCurrency  = BTC
  * quoteCurrency = VND
  * </pre>
  *
- * toString = "BTC/VND". Hai currency phải khác nhau.
+ * {@code toString} = "BTC/VND".
  */
 @Getter
 public final class TradingPair {
@@ -18,13 +21,7 @@ public final class TradingPair {
     private final String baseCurrency;
     private final String quoteCurrency;
 
-    /**
-     * Tạo cặp giao dịch mới.
-     * - Gán baseCurrency và quoteCurrency vào field.
-     * - Validate: cả hai không được null hoặc rỗng → throw IllegalArgumentException.
-     * - baseCurrency và quoteCurrency phải khác nhau.
-     * Ví dụ: new TradingPair("BTC", "VND") → BTC/VND.
-     */
+    /** Tạo cặp; base và quote bắt buộc, khác nhau (vd BTC + VND). */
     public TradingPair(String baseCurrency, String quoteCurrency) {
         if (baseCurrency == null || baseCurrency.isBlank()) {
             throw new IllegalArgumentException("baseCurrency không được null hoặc rỗng");
@@ -39,7 +36,7 @@ public final class TradingPair {
         this.quoteCurrency = quoteCurrency;
     }
 
-    /** Format chuỗi dạng "BTC/VND". */
+    /** Format chuỗi dạng "BTC/VND" — key sổ / hiển thị. */
     @Override
     public String toString() {
         return baseCurrency + "/" + quoteCurrency;

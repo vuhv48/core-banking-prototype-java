@@ -16,15 +16,17 @@ import com.example.accountdemo.domain.exchange.shared.Quantity;
 /**
  * Domain Service — khớp lệnh (stateless), bounded context Exchange.
  *
- * <p>Không phải Aggregate: không id, không persist, không giữ state.
- * <p>Rule không thuộc riêng {@link Order} hay {@link OrderBook} (cần cả lệnh mới + sổ) → tách service.
- * <p>Chỉ xử lý RAM: tạo {@link Trade} + đổi filled/status. Không trừ ví — Application settle sau.
+ * <p><b>Vì sao cần class này:</b> rule khớp cần cả lệnh mới + sổ — không thuộc riêng
+ * {@link Order} hay {@link OrderBook}. Stateless: không id, không persist, không giữ state.
+ * Chỉ xử lý RAM (tạo {@link Trade}, đổi filled/status); trừ ví do Application settle sau.
+ *
  * <p>Ví dụ: SELL 5 @ 60M trên sổ + BUY 10 @ 60M → khớp 5; SELL FILLED; BUY PARTIALLY_FILLED còn 5.
  */
 public class OrderMatchingService {
 
     /**
      * Thử khớp lệnh mới với các lệnh đang chờ trên sổ.
+     * Phần LIMIT còn dư → add vào sổ; MARKET còn dư → cancel.
      *
      * @param incomingOrder lệnh vừa đặt (chưa nằm trên sổ)
      * @param orderBook     sổ đã load từ DB (có list mua/bán đang chờ)

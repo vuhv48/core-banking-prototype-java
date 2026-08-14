@@ -7,8 +7,9 @@ import lombok.*;
 import java.time.Instant;
 
 /**
- * Bảng refresh_tokens – lưu refresh token để cấp lại access token mà không cần đăng nhập lại.
- * Token được lưu dạng hash (SHA-256) để tránh lộ token gốc nếu DB bị khai thác.
+ * JPA entity bảng {@code refresh_tokens} — lưu hash refresh token.
+ *
+ * <p><b>Vì sao cần class này:</b> cấp lại access token không cần login; hash SHA-256 tránh lộ token gốc.
  */
 @Entity
 @Table(name = "refresh_tokens")

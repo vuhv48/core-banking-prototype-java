@@ -7,6 +7,11 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+/**
+ * JPA entity bảng {@code orders}.
+ *
+ * <p><b>Vì sao cần class này:</b> persistence lệnh (kể cả FILLED/CANCELLED); domain Order không gắn JPA.
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity

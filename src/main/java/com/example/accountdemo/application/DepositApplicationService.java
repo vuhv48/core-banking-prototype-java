@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Application Service — điều phối use case nạp tiền.
- * KHÔNG chứa business logic; chỉ gọi domain và repository.
+ * <p><b>Vì sao cần class này:</b> nối API với domain Account.deposit; giữ rule nghiệp vụ
+ * trong Aggregate, service chỉ load → gọi → save.
  */
 @Service
 @RequiredArgsConstructor
@@ -17,12 +18,7 @@ public class DepositApplicationService {
     private final AccountRepository accountRepository;
 
     /**
-     * Use case: nạp tiền vào tài khoản.
-     * Các bước (chỉ điều phối, không có if business rule):
-     * 1. Tạo Money từ amount + currency.
-     * 2. Account account = accountRepository.findById(accountId).
-     * 3. account.deposit(money) — business rule nằm trong Account.
-     * 4. accountRepository.save(account).
+     * Nạp amount/currency vào tài khoản; tăng available của đồng tương ứng.
      */
     public void deposit(String accountId, long amount, String currency) {
         Money money = new Money(amount, currency);

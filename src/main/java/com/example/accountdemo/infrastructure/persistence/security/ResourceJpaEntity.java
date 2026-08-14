@@ -5,8 +5,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Bảng resources – map HTTP API (method + path) sang một permission.
- * Một permission có thể gắn nhiều resource.
+ * JPA entity bảng {@code resources} — map HTTP method+path → permission.
+ *
+ * <p><b>Vì sao cần class này:</b> AuthorizationFilter đọc mapping từ DB thay vì hard-code / {@code @PreAuthorize}.
  */
 @Entity
 @Table(

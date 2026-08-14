@@ -20,12 +20,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
  * Chuẩn hóa mọi lỗi API thành {@link ApiResponse} + {@link ApiError}.
- * Pattern từ sale-app RestExceptionHandler.
+ *
+ * <p><b>Vì sao cần class này:</b> một nơi map exception (security, domain, validation, DB) → JSON —
+ * controller không try/catch lặp lại.
  */
 @Slf4j
 @RestControllerAdvice
 public class RestExceptionHandler {
 
+    /** Sai username/password. */
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> badCredentials(
             BadCredentialsException ex,
@@ -35,12 +38,14 @@ public class RestExceptionHandler {
         return respond(ErrorStatus.AUTH_FAILED, ErrorStatus.AUTH_FAILED.defaultMessage(), req);
     }
 
+    /** Tài khoản bị khóa. */
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<ApiResponse<Void>> disabled(DisabledException ex, HttpServletRequest req) {
         log.warn("[api] Account disabled uri={}", req.getRequestURI());
         return respond(ErrorStatus.ACCOUNT_DISABLED, ErrorStatus.ACCOUNT_DISABLED.defaultMessage(), req);
     }
 
+    /** Chưa xác thực / lỗi authentication khác. */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Void>> authentication(
             AuthenticationException ex,
@@ -50,6 +55,7 @@ public class RestExceptionHandler {
         return respond(ErrorStatus.UNAUTHORIZED, ErrorStatus.UNAUTHORIZED.defaultMessage(), req);
     }
 
+    /** Không đủ quyền. */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> accessDenied(
             AccessDeniedException ex,
@@ -59,6 +65,7 @@ public class RestExceptionHandler {
         return respond(ErrorStatus.FORBIDDEN, ErrorStatus.FORBIDDEN.defaultMessage(), req);
     }
 
+    /** Lỗi nghiệp vụ có mã ErrorStatus. */
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ApiResponse<Void>> domain(DomainException ex, HttpServletRequest req) {
         log.warn("[api] Domain uri={} code={} msg={}", req.getRequestURI(), ex.getCode(), ex.getMessage());
@@ -67,6 +74,7 @@ public class RestExceptionHandler {
                 .orElseGet(() -> respond(HttpStatus.BAD_REQUEST, ex.getCode(), ex.getMessage(), req));
     }
 
+    /** Body JSON không parse được. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> httpMessageNotReadable(
             HttpMessageNotReadableException ex,
@@ -76,6 +84,7 @@ public class RestExceptionHandler {
         return respond(ErrorStatus.VALIDATION_ERROR, "Body JSON không hợp lệ", req);
     }
 
+    /** Tham số / invariant input không hợp lệ. */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> illegalArgument(
             IllegalArgumentException ex,
@@ -89,6 +98,7 @@ public class RestExceptionHandler {
         return respond(ErrorStatus.INVALID_ARGUMENT, message, req);
     }
 
+    /** Trạng thái đối tượng không cho phép thao tác. */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ApiResponse<Void>> illegalState(
             IllegalStateException ex,
@@ -98,6 +108,7 @@ public class RestExceptionHandler {
         return respond(ErrorStatus.ILLEGAL_STATE, ex.getMessage(), req);
     }
 
+    /** Vi phạm ràng buộc DB (unique, FK...). */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> dataIntegrity(
             DataIntegrityViolationException ex,
@@ -107,6 +118,7 @@ public class RestExceptionHandler {
         return respond(ErrorStatus.DATA_INTEGRITY, ErrorStatus.DATA_INTEGRITY.defaultMessage(), req);
     }
 
+    /** Lỗi truy cập dữ liệu chung. */
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ApiResponse<Void>> dataAccess(
             DataAccessException ex,
@@ -116,6 +128,7 @@ public class RestExceptionHandler {
         return respond(ErrorStatus.DATA_ACCESS_ERROR, ErrorStatus.DATA_ACCESS_ERROR.defaultMessage(), req);
     }
 
+    /** Fallback mọi exception chưa map. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> fallback(Exception ex, HttpServletRequest req) {
         log.error("[api] Unhandled exception uri={}", req.getRequestURI(), ex);

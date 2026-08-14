@@ -7,7 +7,9 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
- * Chuyển đổi giữa domain OrderBook và OrderBookJpaEntity.
+ * Map domain {@code OrderBook} ↔ {@link OrderBookJpaEntity}.
+ *
+ * <p><b>Vì sao cần class này:</b> tách metadata sổ lệnh khỏi danh sách Order (load riêng rồi ghép).
  */
 @Component
 public class OrderBookMapper {

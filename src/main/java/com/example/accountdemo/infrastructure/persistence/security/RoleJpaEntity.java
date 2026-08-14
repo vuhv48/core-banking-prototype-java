@@ -8,7 +8,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Bảng roles – mỗi record là một vai trò, ví dụ ROLE_ADMIN, ROLE_USER.
+ * JPA entity bảng {@code roles} (ROLE_ADMIN, ROLE_USER...).
+ *
+ * <p><b>Vì sao cần class này:</b> nhóm permission; user nhận quyền qua role + direct permission.
  */
 @Entity
 @Table(name = "roles")

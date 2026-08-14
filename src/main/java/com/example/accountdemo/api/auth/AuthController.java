@@ -31,8 +31,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Endpoint đăng nhập và làm mới token.
- * Không yêu cầu JWT – đã khai báo permitAll trong SecurityConfig.
+ * Endpoint đăng nhập, refresh token, logout.
+ * Login/refresh không yêu cầu JWT (permitAll trong SecurityConfig).
+ *
+ * <p><b>Vì sao cần class này:</b> cấp access/refresh token và thu hồi refresh khi logout —
+ * tách khỏi controller nghiệp vụ ví/lệnh.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -45,10 +48,7 @@ public class AuthController {
     private final RefreshTokenJpaRepository refreshTokenJpaRepository;
     private final LoginLogService loginLogService;
 
-    /**
-     * POST /api/auth/login
-     * Body: { "username": "...", "password": "..." }
-     */
+    /** Đăng nhập: trả access + refresh token và danh sách permission. */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
             @RequestBody LoginRequest request,
@@ -94,10 +94,7 @@ public class AuthController {
         ));
     }
 
-    /**
-     * POST /api/auth/refresh
-     * Body: { "refreshToken": "..." }
-     */
+    /** Đổi refresh token (rotate) và cấp access token mới. */
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponse> refresh(@RequestBody RefreshRequest request) {
         String tokenHash = jwtUtil.hashToken(request.refreshToken());
@@ -157,9 +154,7 @@ public class AuthController {
         ));
     }
 
-    /**
-     * POST /api/auth/logout
-     */
+    /** Đăng xuất: thu hồi mọi refresh token của user. */
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponse> logout(Authentication authentication) {
         if (authentication == null) {

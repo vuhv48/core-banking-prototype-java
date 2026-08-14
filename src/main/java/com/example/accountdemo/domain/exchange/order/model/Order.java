@@ -6,7 +6,11 @@ import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import lombok.Getter;
 
 /**
- * Aggregate Root — một bản ghi lệnh mua/bán.
+ * Aggregate Root — một lệnh mua/bán trên sàn.
+ *
+ * <p><b>Vì sao cần class này:</b> mọi đổi trạng thái khớp/hủy và phần locked còn lại
+ * phải đi qua đây để giữ invariant: không khớp quá remaining, lệnh final không match/cancel lại.
+ * Application không {@code set} thẳng filled/status.
  *
  * <pre>
  * orderId               = ORD-BUY-001
@@ -50,6 +54,10 @@ public class Order {
     /** Phần locked còn lại chưa settle/release. */
     private long lockedAmountRemaining;
 
+    /**
+     * Tạo lệnh mới (PENDING, filled = 0, chưa lock).
+     * LIMIT bắt buộc có price; lock gắn sau qua {@link #initializeLock}.
+     */
     public Order(
             String orderId,
             String accountId,
@@ -95,7 +103,7 @@ public class Order {
 
     /**
      * Khôi phục Order từ persistence (không đi qua rule tạo lệnh mới).
-     * Dùng khi load từ DB — giữ nguyên filledQuantity và status đã lưu.
+     * Overload cũ — không có thông tin lock (mặc định null/0).
      */
     public static Order reconstitute(
             String orderId,
@@ -114,6 +122,10 @@ public class Order {
         );
     }
 
+    /**
+     * Khôi phục Order đầy đủ từ DB — giữ filled, status và phần lock còn lại.
+     * Dùng khi load để cancel/settle đúng số đã treo.
+     */
     public static Order reconstitute(
             String orderId,
             String accountId,
@@ -158,6 +170,10 @@ public class Order {
         this.lockedAmountRemaining -= amount;
     }
 
+    /**
+     * Ghi nhận một lần khớp: tăng filled, đổi PENDING → PARTIALLY_FILLED / FILLED.
+     * Không trừ ví — Application settle sau theo Trade.
+     */
     public void match(Quantity executedQuantity) {
         if (executedQuantity == null || executedQuantity.getValue() <= 0) {
             throw new IllegalArgumentException("executedQuantity phải lớn hơn 0");
@@ -179,6 +195,7 @@ public class Order {
         }
     }
 
+    /** Hủy lệnh chưa kết thúc — phần lock còn lại Application sẽ release về ví. */
     public void cancel() {
         if (status.isFinal()) {
             throw new IllegalStateException("Không thể hủy lệnh đã kết thúc: " + status);
@@ -186,6 +203,7 @@ public class Order {
         status = OrderStatus.CANCELLED;
     }
 
+    /** Số lượng còn lại chưa khớp = quantity − filledQuantity. */
     public Quantity getRemainingQuantity() {
         return quantity.minus(filledQuantity);
     }

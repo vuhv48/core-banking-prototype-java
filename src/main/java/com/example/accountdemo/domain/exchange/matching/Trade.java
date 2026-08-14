@@ -5,7 +5,11 @@ import com.example.accountdemo.domain.exchange.shared.Price;
 import com.example.accountdemo.domain.exchange.shared.Quantity;
 
 /**
- * Value Object — một bản ghi nhát khớp trên RAM (chưa lưu DB).
+ * Value Object — một nhát khớp trên RAM (chưa lưu DB).
+ *
+ * <p><b>Vì sao cần class này:</b> output tạm của matching — Application dùng để settle ví,
+ * persist {@link com.example.accountdemo.domain.exchange.trade.model.ExecutedTrade}, publish event.
+ * Không phải entity lịch sử.
  *
  * <pre>
  * buyOrderId      = ORD-BUY-001
@@ -28,6 +32,7 @@ public final class Trade {
     /** Giá khớp — lấy theo lệnh đã nằm sẵn trên sổ (maker). */
     private final Price matchedPrice;
 
+    /** Tạo nhát khớp; qty &gt; 0, price bắt buộc (giá maker). */
     public Trade(
             String buyOrderId,
             String sellOrderId,

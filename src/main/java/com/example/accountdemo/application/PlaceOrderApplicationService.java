@@ -28,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Đặt lệnh: ownership → reserve → match → settle → publish event.
+ * Application Service — use case đặt lệnh (LIMIT/MARKET).
+ * <p><b>Vì sao cần class này:</b> điều phối ownership → reserve ví → khớp sổ lệnh →
+ * settle → publish event trong một transaction; API không được tự ghép các bước này.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,6 +44,9 @@ public class PlaceOrderApplicationService {
     private final TradeSettlementService tradeSettlementService;
     private final OwnershipChecker ownershipGuard;
 
+    /**
+     * Đặt lệnh: treo số dư, khớp ngay nếu được, tất toán trade, trả Order sau khi persist.
+     */
     @Transactional
     public Order placeOrder(
             String username,

@@ -8,8 +8,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Bảng permissions – quyền nghiệp vụ (ORDER_PLACE, ORDER_READ...).
- * Mapping API nằm ở bảng {@code resources}, không gắn path vào đây.
+ * JPA entity bảng {@code permissions} — quyền nghiệp vụ (ORDER_PLACE...).
+ *
+ * <p><b>Vì sao cần class này:</b> RBAC; mapping API nằm bảng {@code resources}, không gắn path vào đây.
  */
 @Entity
 @Table(name = "permissions")

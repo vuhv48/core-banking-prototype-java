@@ -7,12 +7,18 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Adapter triển khai {@code TradeRepository} bằng Spring Data JPA.
+ *
+ * <p><b>Vì sao cần class này:</b> persist ExecutedTrade sau khớp lệnh qua port domain.
+ */
 @Repository
 @RequiredArgsConstructor
 public class TradeRepositoryJpaImpl implements TradeRepository {
 
     private final TradeJpaRepository tradeJpaRepository;
 
+    /** Persist một ExecutedTrade vào bảng trades. */
     @Override
     @Transactional
     public void save(ExecutedTrade trade) {
