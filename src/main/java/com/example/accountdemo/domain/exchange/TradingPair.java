@@ -1,5 +1,7 @@
 package com.example.accountdemo.domain.exchange;
 
+import lombok.Getter;
+
 /**
  * Value Object đại diện cặp giao dịch, ví dụ BTC/VND, ETH/USDT.
  *
@@ -7,6 +9,7 @@ package com.example.accountdemo.domain.exchange;
  * - baseCurrency = "BTC"  (tài sản được giao dịch)
  * - quoteCurrency = "VND" (đơn vị tiền dùng để định giá)
  */
+@Getter
 public final class TradingPair {
 
     private final String baseCurrency;
@@ -31,16 +34,6 @@ public final class TradingPair {
         }
         this.baseCurrency = baseCurrency;
         this.quoteCurrency = quoteCurrency;
-    }
-
-    /** Trả về loại tiền cơ sở (base), ví dụ "BTC". */
-    public String getBaseCurrency() {
-        return baseCurrency;
-    }
-
-    /** Trả về loại tiền định giá (quote), ví dụ "VND". */
-    public String getQuoteCurrency() {
-        return quoteCurrency;
     }
 
     /** Format chuỗi dạng "BTC/VND". */

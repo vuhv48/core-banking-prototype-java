@@ -1,9 +1,12 @@
 package com.example.accountdemo.domain.account;
 
+import lombok.Getter;
+
 /**
  * Value Object đại diện một khoản tiền: số tiền + loại tiền tệ.
  * Immutable — mỗi phép tính trả về Money mới, không sửa object cũ.
  */
+@Getter
 public final class Money {
 
     private final long amount;
@@ -15,14 +18,6 @@ public final class Money {
         }
         this.amount = amount;
         this.currency = currency;
-    }
-
-    public long getAmount() {
-        return amount;
-    }
-
-    public String getCurrency() {
-        return currency;
     }
 
     public Money add(Money other) {

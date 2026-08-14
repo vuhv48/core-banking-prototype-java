@@ -20,6 +20,7 @@
 11. [Phân loại DDD](#11-phân-loại-ddd)
 12. [Lộ trình](#12-lộ-trình)
 13. [File code tra cứu](#13-file-code-tra-cứu)
+14. [Hướng dẫn Wallet / Settlement / Cancel / Ownership](#14-hướng-dẫn-wallet--settlement--cancel--ownership)
 
 ---
 
@@ -185,7 +186,7 @@ curl -X POST http://localhost:8080/api/accounts/ACC-001/deposit \
   -d '{"amount": 100000, "currency": "VND"}'
 ```
 
-> Exchange chưa trừ số dư Account khi đặt lệnh.
+> Exchange chưa trừ số dư Account khi đặt lệnh. Hướng dẫn làm: **§14**.
 
 ---
 
@@ -508,14 +509,19 @@ curl -X POST http://localhost:8080/api/auth/logout \
 - [x] RBAC + bảng `resources` (1 permission nhiều path)
 - [x] Filter authz (không @PreAuthorize)
 - [x] ErrorStatus / ApiResponse
+- [x] Wallet / settlement (available+locked, reserve/settle/release)
+- [x] Bảng `trades` + persist khi khớp
+- [x] Cancel / GET order + GET account
+- [x] Ownership (`users.account_id`)
 
 ### Chưa làm
 
-- [ ] GET/DELETE orders, cancel
-- [ ] Wallet / settlement
-- [ ] Bảng `trades`
 - [ ] Register / change-password
 - [ ] Hot reload resources (không restart)
+- [ ] BUY MARKET (đang reject `MARKET_BUY_NOT_SUPPORTED`)
+- [ ] Kafka / Outbox
+
+**DB cũ:** chạy `scripts/migrate-wallet-settlement.sql` rồi restart.
 
 ---
 
@@ -534,3 +540,296 @@ curl -X POST http://localhost:8080/api/auth/logout \
 | `RestExceptionHandler.java` | Map exception → JSON |
 | `scripts/migrate-resources.sql` | Migration DB → resources |
 | **`TAI-LIEU.md`** | **File tài liệu duy nhất** |
+
+---
+
+## 14. Hướng dẫn Wallet / Settlement / Cancel / Ownership
+
+> **Đã implement trong code.** Section này vẫn là tài liệu thiết kế / cách nghĩ.
+> Migration DB cũ: `scripts/migrate-wallet-settlement.sql`.
+
+### 14.0 Hiện trạng (gap)
+
+| Việc | Hiện tại |
+|------|----------|
+| Số dư Account | 1 field `balance` (VND) — **không** có locked / multi-currency |
+| Place order | Không đụng Account; `accountId` lấy từ body |
+| Khớp lệnh | `Trade` trên RAM + `TradeExecutedEvent` **chỉ log** |
+| Cancel / GET order | Domain `Order.cancel()` có sẵn; **chưa** app service / API |
+| Bảng `trades` | **Chưa có** |
+| Ownership | `users.account_id` đã seed (`trader1` → `ACC-001`) nhưng **không dùng** khi đặt lệnh |
+
+### 14.1 Quyết định thiết kế (đọc trước khi code)
+
+**A. Số dư theo currency (bắt buộc vì BTC/VND)**
+
+Một account giữ nhiều đồng: VND + BTC. Mỗi đồng có:
+
+| Field | Nghĩa |
+|-------|--------|
+| `available` | Dùng được (nạp/rút/đặt lệnh mới) |
+| `locked` | Đang treo trên lệnh chưa khớp xong |
+
+```
+available + locked = tổng nắm giữ
+```
+
+Gợi ý model domain:
+
+```
+Account
+  └── Map<String currency, Balance> holdings
+        Balance: available (Money), locked (Money)
+```
+
+Hoặc bảng phụ `account_balances (account_id, currency, available, locked)`.
+
+**B. Matching vẫn “không biết tiền”**
+
+`OrderMatchingService` **không** trừ tiền. Tiền nằm ở **Application**:
+
+1. Place → `reserve`
+2. Sau mỗi `Trade` → `settle`
+3. Cancel → `release`
+
+**C. Công thức reserve (LIMIT trước)**
+
+| Side | Giữ gì | Số lượng lock |
+|------|--------|----------------|
+| **BUY LIMIT** | `quote` (VND) | `quantity × price` |
+| **SELL LIMIT** | `base` (BTC) | `quantity` |
+
+**MARKET (phase 1 đơn giản):**
+
+| Side | Cách làm tạm |
+|------|----------------|
+| SELL MARKET | Lock toàn bộ `quantity` BTC như LIMIT |
+| BUY MARKET | **Tạm chưa hỗ trợ** (không biết giá → không biết lock bao nhiêu VND) — trả lỗi rõ ràng, hoặc chỉ cho BUY LIMIT |
+
+Sau này có thể: lock theo best ask × qty, hoặc “max spend” trong request.
+
+**D. Settlement khi khớp 1 trade**
+
+Ví dụ trade: buyer `ACC-001`, seller `ACC-002`, qty `Q`, price `P` (VND/BTC):
+
+| Ai | Locked trước đó | Sau settle |
+|----|-----------------|------------|
+| Buyer | đã lock VND (có thể ≥ `Q×P` nếu LIMIT cao hơn giá khớp) | `consumeLocked(VND, Q×P)` + `credit(BTC, Q)`; **release** phần VND lock thừa nếu giá khớp &lt; giá limit |
+| Seller | đã lock BTC | `consumeLocked(BTC, Q)` + `credit(VND, Q×P)` |
+
+Định nghĩa method domain gợi ý:
+
+| Method | Ý nghĩa |
+|--------|---------|
+| `reserve(currency, amount)` | `available → locked` (không đủ → lỗi) |
+| `release(currency, amount)` | `locked → available` (cancel / thừa) |
+| `consumeLocked(currency, amount)` | `locked` giảm, **không** về available (đã chi thật) |
+| `credit(currency, amount)` | tăng `available` |
+
+**E. Ownership**
+
+- User có `users.account_id` (vd trader1 → ACC-001).
+- Admin (`account_id` null) + permission `ACCOUNT_DEPOSIT` / … : có thể thao tác hộ (tuỳ rule).
+- Trader: **chỉ** dùng đúng `account_id` của mình; order phải thuộc account đó.
+
+Cách lấy user hiện tại:
+
+```java
+String username = (String) SecurityContextHolder.getContext()
+        .getAuthentication().getPrincipal();
+```
+
+Rồi load `UserJpaEntity` / port `UserAccountResolver.resolveAccountId(username)`.
+
+**F. Transaction**
+
+Place / settle / cancel trong **một** `@Transactional` (cùng DB): save order + account + trade cùng commit. Chưa cần Kafka.
+
+---
+
+### 14.2 Checklist làm theo Phase
+
+#### Phase 0 — Chuẩn bị ErrorStatus / test seed
+
+1. Thêm mã lỗi (gợi ý): `INSUFFICIENT_BALANCE`, `ORDER_NOT_FOUND`, `ORDER_NOT_OWNED`, `ACCOUNT_NOT_OWNED`, `MARKET_BUY_NOT_SUPPORTED`, `ORDER_NOT_CANCELLABLE`.
+2. Seed: `ACC-001` có VND + một ít BTC (để test SELL); `trader1.account_id = ACC-001`.
+3. Viết kịch bản test tay (Postman) vào cuối §14.5 — chưa cần code hết.
+
+#### Phase 1 — Domain Account: holdings + reserve/release/consume/credit
+
+**Layer:** `domain/account` + persistence + migrate.
+
+1. Refactor `Account`: bỏ single `balance` → holdings theo currency (hoặc giữ `getBalance()` = available VND để tương thích tạm, rồi migrate hết).
+2. Implement 4 method trên; rule: FROZEN không reserve/withdraw.
+3. Cập nhật `deposit` / `withdraw` chỉ đụng `available`.
+4. JPA: bảng `account_balances` **hoặc** cột `locked_*` + multi-row.
+5. Script migrate + cập nhật `data.sql`.
+6. Unit test domain: reserve hết available → fail; release đúng; consumeLocked không trả available.
+
+**Không** sửa PlaceOrder ở phase này.
+
+#### Phase 2 — Ownership helper
+
+**Layer:** application + (optional) infrastructure.
+
+1. Port: `CurrentUserAccountPort` / service `OwnershipGuard`:
+   - `requireAccountAccess(username, accountId)`
+   - `requireOrderAccess(username, order)` — so `order.accountId`
+2. Rule gợi ý:
+   - User có `account_id` → chỉ được đúng id đó.
+   - User `account_id == null` và có quyền admin (vd `ACCOUNT_DEPOSIT`) → được bypass (hoặc tách permission `ACCOUNT_IMPERSONATE` sau).
+3. Gắn vào **PlaceOrder** trước (reject body `accountId` lệch).
+4. Có thể bỏ `accountId` khỏi request body sau này — lấy từ user đang login. Phase 2: vẫn nhận body nhưng **bắt buộc khớp**.
+
+#### Phase 3 — Place order = reserve rồi match
+
+**File chính:** `PlaceOrderApplicationService`.
+
+Thứ tự trong 1 transaction:
+
+```
+1. Ownership check (accountId)
+2. Load Account
+3. Nếu BUY MARKET → reject (phase đầu)
+4. Tính lockAmount + lockCurrency (công thức §14.1.C)
+5. account.reserve(...)
+6. accountRepository.save
+7. (giữ nguyên) match + save orders + orderBook
+8. Với mỗi Trade → settle (Phase 4) rồi publish event
+9. Return order
+```
+
+Lưu trên Order (khuyến nghị): `lockedCurrency`, `lockedAmount` (hoặc tính lại từ remaining × price) để cancel/release đúng. LIMIT BUY lock theo **giá limit**; khi khớp giá thấp hơn phải release phần thừa (Phase 4).
+
+#### Phase 4 — Settle khi khớp + bảng `trades`
+
+**Application:** `TradeSettlementService` (gọi từ PlaceOrder sau match, hoặc từ listener in-process của `DomainEventPublisher`).
+
+Với mỗi `Trade`:
+
+1. Load buyOrder / sellOrder → lấy `buyerAccountId`, `sellerAccountId`.
+2. `notional = qty × price` (VND).
+3. Buyer: `consumeLocked(VND, notional)` (+ `release` VND thừa nếu lock theo limit cao hơn); `credit(BTC, qty)`.
+4. Seller: `consumeLocked(BTC, qty)`; `credit(VND, notional)`.
+5. Save cả 2 account.
+6. Persist bảng `trades` (xem schema dưới).
+7. Enrich `TradeExecutedEvent` (optional): thêm account ids — tiện log/Kafka sau.
+
+**Schema gợi ý `trades`:**
+
+```sql
+CREATE TABLE trades (
+  id              VARCHAR(64) PRIMARY KEY,
+  buy_order_id    VARCHAR(64) NOT NULL,
+  sell_order_id   VARCHAR(64) NOT NULL,
+  trading_pair    VARCHAR(32) NOT NULL,  -- hoặc base/quote
+  quantity        BIGINT NOT NULL,
+  price           BIGINT NOT NULL,
+  buyer_account_id  VARCHAR(64) NOT NULL,
+  seller_account_id VARCHAR(64) NOT NULL,
+  created_at      TIMESTAMP NOT NULL,
+  ...
+);
+```
+
+Matching vẫn tạo `Trade` VO; application map → entity rồi save.
+
+#### Phase 5 — Cancel + release
+
+Domain đã có `Order.cancel()` — làm tiếp:
+
+1. `CancelOrderApplicationService.cancel(orderId, username)`:
+   - Load order; ownership; status phải PENDING hoặc PARTIALLY_FILLED.
+   - `order.cancel()`.
+   - Gỡ khỏi `OrderBook` nếu còn trên sổ.
+   - Tính remaining locked:
+     - SELL: remaining qty BTC
+     - BUY LIMIT: remaining qty × limit price (trừ phần đã consume khi partial fill — cần track `lockedRemaining` hoặc suy từ filled).
+   - `account.release(...)`.
+   - Save order, book, account.
+2. API: `DELETE /api/orders/{orderId}` — permission `ORDER_CANCEL` đã map trong `resources`.
+
+#### Phase 6 — GET orders (+ GET account)
+
+1. `GET /api/orders/{orderId}` và/hoặc `GET /api/orders?accountId=...`
+2. Ownership: trader chỉ xem order của mình; admin xem được nhiều hơn (tuỳ chọn).
+3. `GET /api/accounts/{accountId}` — trả available/locked theo currency; permission `ACCOUNT_READ` đã có.
+4. (Optional) `GET /api/trades?orderId=` — sau khi có bảng trades.
+
+---
+
+### 14.3 File / class nên thêm hoặc sửa
+
+| Layer | Thêm / sửa |
+|-------|------------|
+| domain/account | `Balance`, `reserve` / `release` / `consumeLocked` / `credit`; refactor `Account` |
+| domain/exchange | (optional) field lock trên `Order`; enrich `TradeExecutedEvent` |
+| application | `OwnershipGuard`, sửa `PlaceOrderApplicationService`, `TradeSettlementService`, `CancelOrderApplicationService`, `GetOrderApplicationService` |
+| infrastructure | JPA `account_balances`, `trades`; migrate SQL; `UserAccountResolver` |
+| api | `DELETE/GET` orders; `GET` account; bỏ hoặc siết `accountId` trong place body |
+| common | `ErrorStatus` mới |
+| test | Unit Account; integration place → balance đổi; cancel → release |
+
+**Giữ nguyên:** `OrderMatchingService` không import Account.
+
+---
+
+### 14.4 Thứ tự commit / test gợi ý
+
+```
+Phase 1  → unit test Account holdings
+Phase 2  → place với accountId người khác → 403
+Phase 3+4→ BUY LIMIT + SELL LIMIT khớp → VND/BTC 2 bên đổi đúng; row trong trades
+Phase 5  → cancel phần chưa khớp → locked về available
+Phase 6  → GET thấy đúng; readonly vẫn 403 place
+```
+
+**Ví dụ số (dùng khi test):**
+
+1. `ACC-001`: available VND = 10_000_000; BTC = 2 (seed thêm BTC).
+2. Trader1 BUY LIMIT 1 BTC @ 1_000_000 → available VND 9_000_000, locked VND 1_000_000.
+3. ACC-002 SELL LIMIT 1 BTC @ 1_000_000 (cần user/account tương ứng hoặc admin đặt hộ trong test).
+4. Khớp: ACC-001 available BTC += 1, locked VND = 0; ACC-002 available VND += 1_000_000, locked BTC giảm.
+5. Cancel lệnh treo: locked về available.
+
+---
+
+### 14.5 API sau khi làm xong (kỳ vọng)
+
+| Method | Path | Permission | Ghi chú |
+|--------|------|------------|---------|
+| POST | `/api/orders` | ORDER_PLACE | Reserve + match + settle |
+| DELETE | `/api/orders/{id}` | ORDER_CANCEL | Cancel + release |
+| GET | `/api/orders/{id}` | ORDER_READ | Ownership |
+| GET | `/api/accounts/{id}` | ACCOUNT_READ | available/locked |
+
+Kafka: **chưa làm** ở epic này. Khi settle ổn định, mới cân nhắc `KafkaDomainEventPublisher` thay / kèm `LoggingDomainEventPublisher`.
+
+---
+
+### 14.6 Pitfall thường gặp
+
+| Lỗi | Cách tránh |
+|-----|------------|
+| Trừ `balance` thẳng lúc place, không lock | Dùng `available`/`locked` — cancel mới đúng |
+| Settle trong domain matching | Matching không biết Account — settle ở application |
+| Partial fill quên giảm locked đúng số | Settle theo **từng trade** (`Q×P`), không release hết một lần |
+| BUY LIMIT khớp giá thấp hơn | `consumeLocked(notional)` + `release(phần thừa còn lại của phần qty đó)` |
+| Tin `accountId` từ client | Ownership bắt buộc (Phase 2) |
+| MARKET BUY lock sai | Chặn tạm hoặc yêu cầu max VND |
+| Event log rồi settle async không cùng TX | Phase này settle **đồng bộ** trong cùng transaction |
+
+---
+
+### 14.7 Định nghĩa xong / chưa
+
+Xong epic này khi:
+
+- [ ] Place LIMIT trừ/giữ đúng available & locked
+- [ ] Khớp lệnh → 2 account đổi VND/BTC đúng; có row `trades`
+- [ ] Cancel → trả locked còn lại
+- [ ] Trader không đặt/xem/huỷ lệnh account khác
+- [ ] GET order + GET account chạy với permission hiện có
+- [ ] Cập nhật §12 checklist + ví dụ curl §9/§10
+
+**Bước tiếp theo sau epic:** Kafka/Outbox, register/password, hot-reload resources — không gộp vào đây.

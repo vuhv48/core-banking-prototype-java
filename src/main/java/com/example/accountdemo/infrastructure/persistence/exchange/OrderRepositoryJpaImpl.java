@@ -5,20 +5,17 @@ import com.example.accountdemo.domain.exchange.OrderRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Adapter triển khai OrderRepository bằng Spring Data JPA.
  */
 @Repository
+@RequiredArgsConstructor
 public class OrderRepositoryJpaImpl implements OrderRepository {
 
     private final OrderJpaRepository orderJpaRepository;
     private final OrderMapper orderMapper;
-
-    public OrderRepositoryJpaImpl(OrderJpaRepository orderJpaRepository, OrderMapper orderMapper) {
-        this.orderJpaRepository = orderJpaRepository;
-        this.orderMapper = orderMapper;
-    }
 
     @Override
     public Order findById(String orderId) {

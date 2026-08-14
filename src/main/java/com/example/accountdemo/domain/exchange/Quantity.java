@@ -1,9 +1,12 @@
 package com.example.accountdemo.domain.exchange;
 
+import lombok.Getter;
+
 /**
  * Value Object đại diện số lượng giao dịch.
  * Immutable — plus/minus trả về Quantity mới.
  */
+@Getter
 public final class Quantity {
 
     private final long value;
@@ -19,11 +22,6 @@ public final class Quantity {
             throw new IllegalArgumentException("Quantity value cannot be negative");
         }
         this.value = value;
-    }
-
-    /** Trả về số lượng (value). */
-    public long getValue() {
-        return value;
     }
 
     private void ensureNotNull(Quantity quantity) {

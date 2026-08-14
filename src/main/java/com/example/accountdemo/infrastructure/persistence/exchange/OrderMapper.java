@@ -30,6 +30,8 @@ public class OrderMapper {
         entity.setPrice(order.getPrice() != null ? order.getPrice().getValue() : null);
         entity.setFilledQuantity(order.getFilledQuantity().getValue());
         entity.setStatus(order.getStatus().name());
+        entity.setLockedCurrency(order.getLockedCurrency());
+        entity.setLockedAmountRemaining(order.getLockedAmountRemaining());
         return entity;
     }
 
@@ -51,7 +53,9 @@ public class OrderMapper {
                 quantity,
                 price,
                 filledQuantity,
-                OrderStatus.valueOf(entity.getStatus())
+                OrderStatus.valueOf(entity.getStatus()),
+                entity.getLockedCurrency(),
+                entity.getLockedAmountRemaining()
         );
     }
 }

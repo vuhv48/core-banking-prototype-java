@@ -4,18 +4,23 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import lombok.AccessLevel;
+import lombok.Getter;
 
 /**
  * Aggregate Root — sổ lệnh (order book) cho một cặp giao dịch.
  * Quản lý danh sách lệnh mua (bid) và bán (ask).
  */
+@Getter
 public class OrderBook {
 
     /** Cặp giao dịch của sổ này, vd BTC/VND. */
     private TradingPair tradingPair;
     /** Lệnh mua đang chờ (bid) — sort giá cao → thấp. */
+    @Getter(AccessLevel.NONE)
     private List<Order> buyOrders;
     /** Lệnh bán đang chờ (ask) — sort giá thấp → cao. */
+    @Getter(AccessLevel.NONE)
     private List<Order> sellOrders;
 
     public OrderBook(TradingPair pair) {
@@ -73,10 +78,6 @@ public class OrderBook {
                 .map(Order::getPrice)
                 .filter(price -> price != null)
                 .min(Comparator.comparingLong(Price::getValue));
-    }
-
-    public TradingPair getTradingPair() {
-        return tradingPair;
     }
 
     public List<Order> getBuyOrders() {

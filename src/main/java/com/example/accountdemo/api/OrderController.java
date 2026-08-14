@@ -1,7 +1,10 @@
 package com.example.accountdemo.api;
 
+import com.example.accountdemo.api.dto.OrderResponse;
 import com.example.accountdemo.api.dto.PlaceOrderRequest;
 import com.example.accountdemo.api.dto.PlaceOrderResponse;
+import com.example.accountdemo.application.CancelOrderApplicationService;
+import com.example.accountdemo.application.GetOrderApplicationService;
 import com.example.accountdemo.application.PlaceOrderApplicationService;
 import com.example.accountdemo.domain.exchange.Order;
 import com.example.accountdemo.domain.exchange.OrderSide;
@@ -9,28 +12,29 @@ import com.example.accountdemo.domain.exchange.OrderType;
 import com.example.accountdemo.domain.exchange.Price;
 import com.example.accountdemo.domain.exchange.Quantity;
 import com.example.accountdemo.domain.exchange.TradingPair;
+import com.example.accountdemo.infrastructure.security.SecurityUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
 
-/**
- * API đặt lệnh.
- * Parse string → enum/VO ở đây; application chỉ nhận type đã sạch.
- */
 @RestController
 @RequestMapping("/api/orders")
+@RequiredArgsConstructor
 public class OrderController {
 
     private final PlaceOrderApplicationService placeOrderApplicationService;
-
-    public OrderController(PlaceOrderApplicationService placeOrderApplicationService) {
-        this.placeOrderApplicationService = placeOrderApplicationService;
-    }
+    private final CancelOrderApplicationService cancelOrderApplicationService;
+    private final GetOrderApplicationService getOrderApplicationService;
 
     @PostMapping
     public ResponseEntity<PlaceOrderResponse> placeOrder(@RequestBody PlaceOrderRequest request) {
+        String username = SecurityUtils.currentUsername();
         OrderSide side = OrderSide.valueOf(request.side());
         OrderType orderType = OrderType.valueOf(request.orderType());
         TradingPair tradingPair = new TradingPair(request.baseCurrency(), request.quoteCurrency());
@@ -38,6 +42,7 @@ public class OrderController {
         Price price = request.price() == null ? null : new Price(request.price());
 
         Order order = placeOrderApplicationService.placeOrder(
+                username,
                 request.accountId(),
                 side,
                 orderType,
@@ -50,5 +55,17 @@ public class OrderController {
                 order.getOrderId(),
                 order.getStatus().name()
         ));
+    }
+
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderResponse> getOrder(@PathVariable String orderId) {
+        Order order = getOrderApplicationService.get(SecurityUtils.currentUsername(), orderId);
+        return ResponseEntity.ok(OrderResponse.from(order));
+    }
+
+    @DeleteMapping("/{orderId}")
+    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable String orderId) {
+        Order order = cancelOrderApplicationService.cancel(SecurityUtils.currentUsername(), orderId);
+        return ResponseEntity.ok(OrderResponse.from(order));
     }
 }

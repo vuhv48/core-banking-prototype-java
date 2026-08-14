@@ -9,29 +9,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Repository;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Adapter triển khai OrderBookRepository bằng Spring Data JPA.
  */
 @Repository
+@RequiredArgsConstructor
 public class OrderBookRepositoryJpaImpl implements OrderBookRepository {
 
     private final OrderBookJpaRepository orderBookJpaRepository;
     private final OrderJpaRepository orderJpaRepository;
     private final OrderBookMapper orderBookMapper;
     private final OrderMapper orderMapper;
-
-    public OrderBookRepositoryJpaImpl(
-            OrderBookJpaRepository orderBookJpaRepository,
-            OrderJpaRepository orderJpaRepository,
-            OrderBookMapper orderBookMapper,
-            OrderMapper orderMapper
-    ) {
-        this.orderBookJpaRepository = orderBookJpaRepository;
-        this.orderJpaRepository = orderJpaRepository;
-        this.orderBookMapper = orderBookMapper;
-        this.orderMapper = orderMapper;
-    }
 
     @Override
     public OrderBook findByTradingPair(TradingPair pair) {

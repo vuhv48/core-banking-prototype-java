@@ -1,14 +1,18 @@
 package com.example.accountdemo.domain.exchange;
 
+import lombok.Getter;
+
 /**
  * Aggregate Root — lệnh giao dịch (mua/bán).
  * Tự bảo vệ rule: LIMIT phải có giá, không cancel khi đã FILLED, match đúng số lượng.
+ * Chỉ @Getter — không @Setter/@Data để không bỏ qua match()/cancel().
  */
+@Getter
 public class Order {
 
     /** Id duy nhất của lệnh (vd UUID). */
     private String orderId;
-    /** Ai đặt lệnh (vd ACC-001) — chỉ là nhãn, chưa trừ tiền tài khoản. */
+    /** Ai đặt lệnh (vd ACC-001). */
     private String accountId;
     /** Mua hay bán: BUY / SELL. */
     private OrderSide side;
@@ -24,6 +28,10 @@ public class Order {
     private Quantity filledQuantity;
     /** Trạng thái: PENDING → PARTIALLY_FILLED → FILLED (hoặc CANCELLED). */
     private OrderStatus status;
+    /** Currency đang treo trên lệnh (VND khi BUY, BTC khi SELL). */
+    private String lockedCurrency;
+    /** Phần locked còn lại chưa settle/release. */
+    private long lockedAmountRemaining;
 
     public Order(
             String orderId,
@@ -64,6 +72,8 @@ public class Order {
         this.price = price;
         this.filledQuantity = new Quantity(0);
         this.status = OrderStatus.PENDING;
+        this.lockedCurrency = null;
+        this.lockedAmountRemaining = 0;
     }
 
     /**
@@ -81,10 +91,54 @@ public class Order {
             Quantity filledQuantity,
             OrderStatus status
     ) {
+        return reconstitute(
+                orderId, accountId, side, orderType, tradingPair, quantity, price,
+                filledQuantity, status, null, 0
+        );
+    }
+
+    public static Order reconstitute(
+            String orderId,
+            String accountId,
+            OrderSide side,
+            OrderType orderType,
+            TradingPair tradingPair,
+            Quantity quantity,
+            Price price,
+            Quantity filledQuantity,
+            OrderStatus status,
+            String lockedCurrency,
+            long lockedAmountRemaining
+    ) {
         Order order = new Order(orderId, accountId, side, orderType, tradingPair, quantity, price);
         order.filledQuantity = filledQuantity != null ? filledQuantity : new Quantity(0);
         order.status = status != null ? status : OrderStatus.PENDING;
+        order.lockedCurrency = lockedCurrency;
+        order.lockedAmountRemaining = lockedAmountRemaining;
         return order;
+    }
+
+    /** Gán số đang treo sau khi Account.reserve thành công. */
+    public void initializeLock(String currency, long amount) {
+        if (currency == null || currency.isBlank()) {
+            throw new IllegalArgumentException("lockedCurrency không được rỗng");
+        }
+        if (amount <= 0) {
+            throw new IllegalArgumentException("lockedAmount phải lớn hơn 0");
+        }
+        this.lockedCurrency = currency;
+        this.lockedAmountRemaining = amount;
+    }
+
+    /** Giảm phần lock đã dùng khi settle (theo giá limit × qty hoặc qty base). */
+    public void reduceLock(long amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("amount không được âm");
+        }
+        if (amount > lockedAmountRemaining) {
+            throw new IllegalArgumentException("reduceLock vượt quá locked còn lại");
+        }
+        this.lockedAmountRemaining -= amount;
     }
 
     public void match(Quantity executedQuantity) {
@@ -117,41 +171,5 @@ public class Order {
 
     public Quantity getRemainingQuantity() {
         return quantity.minus(filledQuantity);
-    }
-
-    public String getOrderId() {
-        return orderId;
-    }
-
-    public String getAccountId() {
-        return accountId;
-    }
-
-    public OrderSide getSide() {
-        return side;
-    }
-
-    public OrderType getOrderType() {
-        return orderType;
-    }
-
-    public TradingPair getTradingPair() {
-        return tradingPair;
-    }
-
-    public Price getPrice() {
-        return price;
-    }
-
-    public Quantity getQuantity() {
-        return quantity;
-    }
-
-    public Quantity getFilledQuantity() {
-        return filledQuantity;
-    }
-
-    public OrderStatus getStatus() {
-        return status;
     }
 }

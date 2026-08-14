@@ -1,5 +1,7 @@
 package com.example.accountdemo.domain.exchange;
 
+import lombok.Getter;
+
 /**
  * Value Object — mô tả một lần khớp thành công giữa lệnh mua và lệnh bán.
  *
@@ -9,6 +11,7 @@ package com.example.accountdemo.domain.exchange;
  *   <li>Không phải Aggregate — không lưu DB trực tiếp; sinh ra trong {@link OrderMatchingService}</li>
  * </ul>
  */
+@Getter
 public final class Trade {
 
     /** Id lệnh mua đã khớp. */
@@ -42,21 +45,5 @@ public final class Trade {
         this.sellOrderId = sellOrderId;
         this.matchedQuantity = matchedQuantity;
         this.matchedPrice = matchedPrice;
-    }
-
-    public String getBuyOrderId() {
-        return buyOrderId;
-    }
-
-    public String getSellOrderId() {
-        return sellOrderId;
-    }
-
-    public Quantity getMatchedQuantity() {
-        return matchedQuantity;
-    }
-
-    public Price getMatchedPrice() {
-        return matchedPrice;
     }
 }

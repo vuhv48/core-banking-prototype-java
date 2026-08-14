@@ -31,6 +31,10 @@ public enum ErrorStatus {
     ORDER_INVALID(400, "ORDER_INVALID", "Lệnh không hợp lệ"),
     INSUFFICIENT_BALANCE(400, "INSUFFICIENT_BALANCE", "Số dư không đủ"),
     ACCOUNT_FROZEN(403, "ACCOUNT_FROZEN", "Tài khoản đang bị đóng băng"),
+    ACCOUNT_NOT_OWNED(403, "ACCOUNT_NOT_OWNED", "Không được thao tác tài khoản này"),
+    ORDER_NOT_OWNED(403, "ORDER_NOT_OWNED", "Không được thao tác lệnh này"),
+    ORDER_NOT_CANCELLABLE(409, "ORDER_NOT_CANCELLABLE", "Lệnh không thể hủy"),
+    MARKET_BUY_NOT_SUPPORTED(400, "MARKET_BUY_NOT_SUPPORTED", "Chưa hỗ trợ BUY MARKET (không xác định số VND cần giữ)"),
     DATA_INTEGRITY(409, "DATA_INTEGRITY", "Dữ liệu xung đột ràng buộc"),
     ILLEGAL_STATE(409, "ILLEGAL_STATE", "Trạng thái không hợp lệ"),
 

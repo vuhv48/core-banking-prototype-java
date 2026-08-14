@@ -4,19 +4,17 @@ import com.example.accountdemo.domain.account.Account;
 import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.account.Money;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Application Service — điều phối use case rút tiền.
  * KHÔNG chứa business logic; chỉ gọi domain và repository.
  */
 @Service
+@RequiredArgsConstructor
 public class WithdrawApplicationService {
 
     private final AccountRepository accountRepository;
-
-    public WithdrawApplicationService(AccountRepository accountRepository) {
-        this.accountRepository = accountRepository;
-    }
 
     /**
      * Use case: rút tiền từ tài khoản.

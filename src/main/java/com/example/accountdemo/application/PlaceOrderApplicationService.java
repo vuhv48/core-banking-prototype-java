@@ -1,5 +1,10 @@
 package com.example.accountdemo.application;
 
+import com.example.accountdemo.api.common.DomainException;
+import com.example.accountdemo.api.common.ErrorStatus;
+import com.example.accountdemo.domain.account.Account;
+import com.example.accountdemo.domain.account.AccountRepository;
+import com.example.accountdemo.domain.account.Money;
 import com.example.accountdemo.domain.exchange.DomainEventPublisher;
 import com.example.accountdemo.domain.exchange.MatchResult;
 import com.example.accountdemo.domain.exchange.Order;
@@ -15,57 +20,31 @@ import com.example.accountdemo.domain.exchange.Trade;
 import com.example.accountdemo.domain.exchange.TradingPair;
 import com.example.accountdemo.domain.exchange.event.TradeExecutedEvent;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
 
 /**
- * Application Service — điều phối use case "đặt lệnh", không chứa rule khớp lệnh.
- *
- * <p>Phân loại DDD:
- * <ul>
- *   <li>Không phải Aggregate / Domain Service — chỉ orchestrate: load → gọi domain → save → publish</li>
- *   <li>Rule nghiệp vụ nằm ở {@link com.example.accountdemo.domain.exchange.Order},
- *       {@link com.example.accountdemo.domain.exchange.OrderBook},
- *       {@link com.example.accountdemo.domain.exchange.OrderMatchingService}</li>
- * </ul>
- *
- * <p>Luồng:
- * 1. Tạo lệnh mới (Order tự validate LIMIT phải có giá)
- * 2. Sổ cặp phải đã được admin/seed mở
- * 3. Thử khớp với lệnh đang chờ trên sổ
- * 4. Lưu DB các lệnh đã đổi + sổ
- * 5. Mỗi lần khớp thành công → publish TradeExecutedEvent (log)
+ * Đặt lệnh: ownership → reserve → match → settle → publish event.
  */
 @Service
+@RequiredArgsConstructor
 public class PlaceOrderApplicationService {
 
     private final OrderRepository orderRepository;
     private final OrderBookRepository orderBookRepository;
     private final OrderMatchingService orderMatchingService;
     private final DomainEventPublisher domainEventPublisher;
+    private final AccountRepository accountRepository;
+    private final TradeSettlementService tradeSettlementService;
+    private final OwnershipChecker ownershipGuard;
 
-    public PlaceOrderApplicationService(
-            OrderRepository orderRepository,
-            OrderBookRepository orderBookRepository,
-            OrderMatchingService orderMatchingService,
-            DomainEventPublisher domainEventPublisher
-    ) {
-        this.orderRepository = orderRepository;
-        this.orderBookRepository = orderBookRepository;
-        this.orderMatchingService = orderMatchingService;
-        this.domainEventPublisher = domainEventPublisher;
-    }
-
-    /**
-     * Đặt lệnh mua/bán trên một cặp (vd BTC/VND).
-     *
-     * @return lệnh sau khi xử lý — status có thể:
-     *         PENDING (chưa khớp, đang chờ trên sổ),
-     *         PARTIALLY_FILLED (khớp một phần),
-     *         FILLED (khớp hết),
-     *         CANCELLED (MARKET còn dư bị hủy)
-     */
+    @Transactional
     public Order placeOrder(
+            String username,
             String accountId,
             OrderSide side,
             OrderType orderType,
@@ -73,35 +52,86 @@ public class PlaceOrderApplicationService {
             Quantity quantity,
             Price price
     ) {
-        // Lệnh mới của user (vd Anh A mua 10 @ 60M)
+        ownershipGuard.requireAccountAccess(username, accountId);
+
+        if (side == OrderSide.BUY && orderType == OrderType.MARKET) {
+            throw new DomainException(ErrorStatus.MARKET_BUY_NOT_SUPPORTED);
+        }
+
+        Account account = accountRepository.findById(accountId);
+        if (account == null) {
+            throw new DomainException(ErrorStatus.ACCOUNT_NOT_FOUND, "Không tìm thấy tài khoản: " + accountId);
+        }
+
         String orderId = UUID.randomUUID().toString();
         Order order = new Order(orderId, accountId, side, orderType, tradingPair, quantity, price);
 
-        // ── Bước 1: LOAD DB → object Java (list buyOrders/sellOrders trong OrderBook) ──
+        Money lockMoney = calculateLock(order);
+        try {
+            account.reserve(lockMoney);
+        } catch (IllegalStateException e) {
+            throw new DomainException(ErrorStatus.ACCOUNT_FROZEN, e.getMessage());
+        } catch (IllegalArgumentException e) {
+            throw new DomainException(ErrorStatus.INSUFFICIENT_BALANCE, e.getMessage());
+        }
+        order.initializeLock(lockMoney.getCurrency(), lockMoney.getAmount());
+        accountRepository.save(account);
+
         OrderBook orderBook = orderBookRepository.findByTradingPair(tradingPair);
         if (orderBook == null) {
-            throw new IllegalArgumentException("Cặp giao dịch chưa được mở: " + tradingPair);
+            throw new DomainException(ErrorStatus.ORDER_BOOK_NOT_OPEN, "Cặp giao dịch chưa được mở: " + tradingPair);
         }
 
-        // ── Bước 2: DOMAIN — khớp trên RAM (addOrder/removeOrder/match), chưa ghi DB ──
         MatchResult matchResult = orderMatchingService.match(order, orderBook);
 
-        // ── Bước 3: LƯU DB (bước match KHÔNG làm việc này) ──
-        // Mỗi Order trong affected = 1 dòng bảng orders (INSERT/UPDATE filled_quantity, status...)
-        // Vd: mua 10 khớp 8 còn 2 → BUY-NEW: quantity=10, filled=8, PARTIALLY_FILLED
+        Map<String, Order> ordersById = new HashMap<>();
+        for (Order affected : matchResult.getAffectedOrders()) {
+            ordersById.put(affected.getOrderId(), affected);
+        }
+
+        for (Trade trade : matchResult.getTrades()) {
+            tradeSettlementService.settle(trade, tradingPair, ordersById);
+        }
+
+        // MARKET hủy phần dư → trả locked còn lại
+        releaseCancelledRemainder(order);
+
         for (Order affected : matchResult.getAffectedOrders()) {
             orderRepository.save(affected);
         }
-        // Lưu các lệnh đang nằm TRONG list buyOrders + sellOrders của sổ (RAM → DB)
-        // Lệnh vừa addOrder (còn 2 đồng treo sổ) nằm trong list này → được persist để lần sau load lại
         orderBookRepository.save(orderBook);
 
-        // Thông báo mỗi lần khớp (Sprint 5) — save xong mới publish
         for (Trade trade : matchResult.getTrades()) {
             domainEventPublisher.publish(toEvent(trade, tradingPair));
         }
 
         return order;
+    }
+
+    private void releaseCancelledRemainder(Order order) {
+        if (order.getStatus() != com.example.accountdemo.domain.exchange.OrderStatus.CANCELLED) {
+            return;
+        }
+        long remaining = order.getLockedAmountRemaining();
+        if (remaining <= 0 || order.getLockedCurrency() == null) {
+            return;
+        }
+        Account account = accountRepository.findById(order.getAccountId());
+        if (account == null) {
+            throw new DomainException(ErrorStatus.ACCOUNT_NOT_FOUND);
+        }
+        account.release(new Money(remaining, order.getLockedCurrency()));
+        order.reduceLock(remaining);
+        accountRepository.save(account);
+    }
+
+    private Money calculateLock(Order order) {
+        TradingPair pair = order.getTradingPair();
+        if (order.getSide() == OrderSide.BUY) {
+            long amount = order.getQuantity().getValue() * order.getPrice().getValue();
+            return new Money(amount, pair.getQuoteCurrency());
+        }
+        return new Money(order.getQuantity().getValue(), pair.getBaseCurrency());
     }
 
     private TradeExecutedEvent toEvent(Trade trade, TradingPair tradingPair) {

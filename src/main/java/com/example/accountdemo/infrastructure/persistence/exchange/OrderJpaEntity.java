@@ -24,4 +24,6 @@ public class OrderJpaEntity extends BaseEntity {
     private Long price;
     private long filledQuantity;
     private String status;
+    private String lockedCurrency;
+    private long lockedAmountRemaining;
 }

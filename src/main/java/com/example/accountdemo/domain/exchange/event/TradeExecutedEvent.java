@@ -4,6 +4,8 @@ import com.example.accountdemo.domain.exchange.Price;
 import com.example.accountdemo.domain.exchange.Quantity;
 import com.example.accountdemo.domain.exchange.TradingPair;
 import java.time.Instant;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Domain Event — thông báo "vừa khớp xong một trade" (immutable, có timestamp).
@@ -15,6 +17,8 @@ import java.time.Instant;
  *   <li>Listener (infra) có thể log, gửi Kafka, settle wallet… sau này</li>
  * </ul>
  */
+@Getter
+@RequiredArgsConstructor
 public final class TradeExecutedEvent {
 
     private final String tradeId;
@@ -24,52 +28,6 @@ public final class TradeExecutedEvent {
     private final Quantity quantity;
     private final Price price;
     private final Instant occurredAt;
-
-    public TradeExecutedEvent(
-            String tradeId,
-            String buyOrderId,
-            String sellOrderId,
-            TradingPair tradingPair,
-            Quantity quantity,
-            Price price,
-            Instant occurredAt
-    ) {
-        this.tradeId = tradeId;
-        this.buyOrderId = buyOrderId;
-        this.sellOrderId = sellOrderId;
-        this.tradingPair = tradingPair;
-        this.quantity = quantity;
-        this.price = price;
-        this.occurredAt = occurredAt;
-    }
-
-    public String getTradeId() {
-        return tradeId;
-    }
-
-    public String getBuyOrderId() {
-        return buyOrderId;
-    }
-
-    public String getSellOrderId() {
-        return sellOrderId;
-    }
-
-    public TradingPair getTradingPair() {
-        return tradingPair;
-    }
-
-    public Quantity getQuantity() {
-        return quantity;
-    }
-
-    public Price getPrice() {
-        return price;
-    }
-
-    public Instant getOccurredAt() {
-        return occurredAt;
-    }
 
     @Override
     public String toString() {

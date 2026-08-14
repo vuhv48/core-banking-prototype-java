@@ -1,9 +1,12 @@
 package com.example.accountdemo.api.common;
 
+import lombok.Getter;
+
 /**
  * Exception nghiệp vụ mang mã {@link ErrorStatus}.
  * RestExceptionHandler map thành JSON {@link ApiResponse}.
  */
+@Getter
 public class DomainException extends RuntimeException {
 
     private final String code;
@@ -21,9 +24,5 @@ public class DomainException extends RuntimeException {
     public DomainException(ErrorStatus status, String message) {
         super(message);
         this.code = status.code();
-    }
-
-    public String getCode() {
-        return code;
     }
 }

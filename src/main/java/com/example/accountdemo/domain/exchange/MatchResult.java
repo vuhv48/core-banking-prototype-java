@@ -1,7 +1,7 @@
 package com.example.accountdemo.domain.exchange;
 
-import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
 
 /**
  * Result object — output tạm của {@link OrderMatchingService#match}, không lưu DB.
@@ -18,6 +18,7 @@ import java.util.List;
  *   <li>{@code affectedOrders} — các {@link Order} (Aggregate) đã đổi status/filledQuantity, cần save</li>
  * </ul>
  */
+@Getter
 public final class MatchResult {
 
     /** Các lần khớp thành công trong lần gọi match(). */
@@ -28,13 +29,5 @@ public final class MatchResult {
     public MatchResult(List<Trade> trades, List<Order> affectedOrders) {
         this.trades = List.copyOf(trades);
         this.affectedOrders = List.copyOf(affectedOrders);
-    }
-
-    public List<Trade> getTrades() {
-        return trades;
-    }
-
-    public List<Order> getAffectedOrders() {
-        return affectedOrders;
     }
 }

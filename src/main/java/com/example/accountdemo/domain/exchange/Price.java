@@ -1,9 +1,12 @@
 package com.example.accountdemo.domain.exchange;
 
+import lombok.Getter;
+
 /**
  * Value Object đại diện giá giao dịch.
  * Immutable — mỗi phép so sánh/tính toán không sửa object cũ.
  */
+@Getter
 public final class Price {
 
     private final long value;
@@ -19,11 +22,6 @@ public final class Price {
             throw new IllegalArgumentException("Giá phải lớn hơn 0");
         }
         this.value = value;
-    }
-
-    /** Trả về giá trị (value). */
-    public long getValue() {
-        return value;
     }
 
     /**
