@@ -16,7 +16,9 @@ class AccountMapperTest {
 
     @Test
     void toEntity_shouldMapDomainFields() {
-        Account account = new Account("ACC-001", new Money(100_000, "VND"), AccountStatus.ACTIVE);
+        Map<String, Balance> holdings = new LinkedHashMap<>();
+        holdings.put("VND", new Balance("VND", 100_000, 0));
+        Account account = new Account("ACC-001", AccountStatus.ACTIVE, holdings);
 
         AccountJpaEntity entity = accountMapper.toEntity(account);
 
@@ -43,7 +45,7 @@ class AccountMapperTest {
         Account account = accountMapper.toDomain(entity);
 
         assertEquals("ACC-002", account.getAccountId());
-        assertEquals(200_000, account.getBalance().getAmount());
+        assertEquals(200_000, account.getAvailable("VND").getAmount());
         assertEquals(AccountStatus.FROZEN, account.getStatus());
     }
 

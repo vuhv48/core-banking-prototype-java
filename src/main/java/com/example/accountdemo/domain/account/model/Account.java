@@ -50,26 +50,6 @@ public class Account {
     }
 
     /**
-     * Tạo ví một currency, locked = 0.
-     * Giữ tương thích API/test cũ chỉ biết một số dư (vd chỉ VND).
-     */
-    public Account(String accountId, Money availableBalance, AccountStatus status) {
-        this(accountId, status, toHoldings(availableBalance));
-    }
-
-    private static Map<String, Balance> toHoldings(Money availableBalance) {
-        if (availableBalance == null) {
-            throw new IllegalArgumentException("balance không được null");
-        }
-        Map<String, Balance> map = new LinkedHashMap<>();
-        map.put(
-                availableBalance.getCurrency(),
-                new Balance(availableBalance.getCurrency(), availableBalance.getAmount(), 0)
-        );
-        return map;
-    }
-
-    /**
      * Nạp tiền vào available.
      * Không đụng locked — tiền mới vào là dùng được ngay (kể cả account FROZEN vẫn cho nạp).
      */
@@ -146,21 +126,6 @@ public class Account {
             return new Money(0, currency);
         }
         return new Money(balance.getLocked(), currency);
-    }
-
-    /**
-     * Available VND nếu có, không thì currency đầu tiên.
-     * Giữ tương thích chỗ cũ gọi {@code getBalance()} thay vì {@code getAvailable("VND")}.
-     */
-    public Money getBalance() {
-        if (holdings.containsKey("VND")) {
-            return getAvailable("VND");
-        }
-        if (holdings.isEmpty()) {
-            return new Money(0, "VND");
-        }
-        Balance first = holdings.values().iterator().next();
-        return first.toAvailableMoney();
     }
 
     /**

@@ -48,7 +48,6 @@
 /Users/vuhoang/hoangvanvu/MyProject/domain-driven-design-bank/src/main/java/com/example/accountdemo/domain/exchange/trade/TradeRepository.java
 /Users/vuhoang/hoangvanvu/MyProject/domain-driven-design-bank/src/main/java/com/example/accountdemo/domain/exchange/trade/model/ExecutedTrade.java
 /Users/vuhoang/hoangvanvu/MyProject/domain-driven-design-bank/src/main/java/com/example/accountdemo/infrastructure/config/ExchangeDomainConfig.java
-/Users/vuhoang/hoangvanvu/MyProject/domain-driven-design-bank/src/main/java/com/example/accountdemo/infrastructure/config/SeedDataConfig.java
 /Users/vuhoang/hoangvanvu/MyProject/domain-driven-design-bank/src/main/java/com/example/accountdemo/infrastructure/event/LoggingDomainEventPublisher.java
 /Users/vuhoang/hoangvanvu/MyProject/domain-driven-design-bank/src/main/java/com/example/accountdemo/infrastructure/persistence/BaseEntity.java
 /Users/vuhoang/hoangvanvu/MyProject/domain-driven-design-bank/src/main/java/com/example/accountdemo/infrastructure/persistence/account/AccountBalanceJpaEntity.java

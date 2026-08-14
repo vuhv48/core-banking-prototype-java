@@ -3,7 +3,10 @@ package com.example.accountdemo.application;
 import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.account.model.AccountStatus;
+import com.example.accountdemo.domain.account.model.Balance;
 import com.example.accountdemo.domain.account.model.Money;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,12 +31,14 @@ class WithdrawApplicationServiceTest {
 
     @Test
     void withdraw_shouldLoadAccountWithdrawAndSave() {
-        Account account = new Account("ACC-001", new Money(100_000, "VND"), AccountStatus.ACTIVE);
+        Map<String, Balance> holdings = new LinkedHashMap<>();
+        holdings.put("VND", new Balance("VND", 100_000, 0));
+        Account account = new Account("ACC-001", AccountStatus.ACTIVE, holdings);
         when(accountRepository.findById("ACC-001")).thenReturn(account);
 
         withdrawApplicationService.withdraw("ACC-001", 30_000, "VND");
 
-        assertEquals(70_000, account.getBalance().getAmount());
+        assertEquals(70_000, account.getAvailable("VND").getAmount());
         verify(accountRepository).save(account);
     }
 

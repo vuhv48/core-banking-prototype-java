@@ -16,7 +16,7 @@
 
 BEGIN;
 
--- ─── Drop cũ (thứ tự an toàn) ────────────────────────────────────────────────
+-- ─── Drop tables (reset sạch) ────────────────────────────────────────────────
 DROP TABLE IF EXISTS login_logs CASCADE;
 DROP TABLE IF EXISTS refresh_tokens CASCADE;
 DROP TABLE IF EXISTS user_permissions CASCADE;

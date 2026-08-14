@@ -1,6 +1,2 @@
-spring:
-  jpa:
-    defer-datasource-initialization: true
-  sql:
-    init:
-      mode: always
+# Profile dev — DB setup bằng scripts/init-full.sql trước khi chạy app.
+# Không dùng spring.sql.init / data.sql.

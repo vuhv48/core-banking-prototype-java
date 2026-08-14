@@ -102,27 +102,6 @@ public class Order {
     }
 
     /**
-     * Khôi phục Order từ persistence (không đi qua rule tạo lệnh mới).
-     * Overload cũ — không có thông tin lock (mặc định null/0).
-     */
-    public static Order reconstitute(
-            String orderId,
-            String accountId,
-            OrderSide side,
-            OrderType orderType,
-            TradingPair tradingPair,
-            Quantity quantity,
-            Price price,
-            Quantity filledQuantity,
-            OrderStatus status
-    ) {
-        return reconstitute(
-                orderId, accountId, side, orderType, tradingPair, quantity, price,
-                filledQuantity, status, null, 0
-        );
-    }
-
-    /**
      * Khôi phục Order đầy đủ từ DB — giữ filled, status và phần lock còn lại.
      * Dùng khi load để cancel/settle đúng số đã treo.
      */
