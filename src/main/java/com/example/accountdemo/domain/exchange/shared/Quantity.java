@@ -3,8 +3,11 @@ package com.example.accountdemo.domain.exchange.shared;
 import lombok.Getter;
 
 /**
- * Value Object đại diện số lượng giao dịch.
- * Immutable — plus/minus trả về Quantity mới.
+ * Value Object — một bản ghi số lượng (≥ 0).
+ *
+ * <pre>
+ * value = 1
+ * </pre>
  */
 @Getter
 public final class Quantity {

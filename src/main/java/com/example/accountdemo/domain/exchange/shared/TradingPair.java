@@ -3,11 +3,14 @@ package com.example.accountdemo.domain.exchange.shared;
 import lombok.Getter;
 
 /**
- * Value Object đại diện cặp giao dịch, ví dụ BTC/VND, ETH/USDT.
+ * Value Object — một bản ghi cặp giao dịch.
  *
- * Ví dụ: BTC/VND nghĩa là mua/bán BTC, giá tính bằng VND.
- * - baseCurrency = "BTC"  (tài sản được giao dịch)
- * - quoteCurrency = "VND" (đơn vị tiền dùng để định giá)
+ * <pre>
+ * baseCurrency  = BTC
+ * quoteCurrency = VND
+ * </pre>
+ *
+ * toString = "BTC/VND". Hai currency phải khác nhau.
  */
 @Getter
 public final class TradingPair {

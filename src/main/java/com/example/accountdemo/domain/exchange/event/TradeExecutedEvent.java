@@ -8,14 +8,17 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Domain Event — thông báo "vừa khớp xong một trade" (immutable, có timestamp).
+ * Domain Event — một bản ghi “vừa khớp xong” (để log / Kafka).
  *
- * <p>Phân loại DDD:
- * <ul>
- *   <li>Không phải Aggregate — ghi nhận sự kiện đã xảy ra, không phải entity gốc</li>
- *   <li>Không phải Event Sourcing — state chính vẫn lưu qua JPA ({@code orders}, {@code order_books})</li>
- *   <li>Listener (infra) có thể log, gửi Kafka, settle wallet… sau này</li>
- * </ul>
+ * <pre>
+ * tradeId     = TRD-001
+ * buyOrderId  = ORD-BUY-001
+ * sellOrderId = ORD-SELL-001
+ * tradingPair = BTC/VND
+ * quantity    = 1
+ * price       = 60_000_000
+ * occurredAt  = 2026-08-14T03:25:00Z
+ * </pre>
  */
 @Getter
 @RequiredArgsConstructor

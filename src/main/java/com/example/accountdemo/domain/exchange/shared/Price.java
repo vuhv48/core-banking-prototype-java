@@ -3,8 +3,11 @@ package com.example.accountdemo.domain.exchange.shared;
 import lombok.Getter;
 
 /**
- * Value Object đại diện giá giao dịch.
- * Immutable — mỗi phép so sánh/tính toán không sửa object cũ.
+ * Value Object — một bản ghi giá (số nguyên > 0).
+ *
+ * <pre>
+ * value = 60_000_000
+ * </pre>
  */
 @Getter
 public final class Price {

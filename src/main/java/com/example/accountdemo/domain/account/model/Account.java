@@ -7,8 +7,18 @@ import lombok.AccessLevel;
 import lombok.Getter;
 
 /**
- * Aggregate Root — ví / tài khoản.
- * Mỗi currency có available (xài được) và locked (đang treo trên lệnh).
+ * Aggregate Root — một bản ghi ví / tài khoản.
+ *
+ * <pre>
+ * accountId = ACC-001
+ * status    = ACTIVE
+ * holdings  = {
+ *   VND: available=10_000_000, locked=0
+ *   BTC: available=5,          locked=0
+ * }
+ * </pre>
+ *
+ * Đổi số dư qua deposit/withdraw/reserve/release/consumeLocked/credit — không {@code @Setter}.
  */
 @Getter
 public class Account {

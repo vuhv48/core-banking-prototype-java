@@ -3,8 +3,14 @@ package com.example.accountdemo.domain.account.model;
 import lombok.Getter;
 
 /**
- * Value Object đại diện một khoản tiền: số tiền + loại tiền tệ.
- * Immutable — mỗi phép tính trả về Money mới, không sửa object cũ.
+ * Value Object — một khoản tiền.
+ *
+ * <pre>
+ * amount   = 10_000_000
+ * currency = VND
+ * </pre>
+ *
+ * Immutable. Hai Money khác currency không cộng/trừ được.
  */
 @Getter
 public final class Money {

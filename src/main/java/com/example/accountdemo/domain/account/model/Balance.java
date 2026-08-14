@@ -3,7 +3,15 @@ package com.example.accountdemo.domain.account.model;
 import lombok.Getter;
 
 /**
- * Value Object — số dư một currency: available (xài được) + locked (đang treo lệnh).
+ * Value Object — một bản ghi số dư theo currency (trong Account).
+ *
+ * <pre>
+ * currency  = VND
+ * available = 10_000_000
+ * locked    = 0
+ * </pre>
+ *
+ * Immutable: reserve/release/consumeLocked/credit trả Balance mới. available ≥ 0, locked ≥ 0.
  */
 @Getter
 public final class Balance {

@@ -1,9 +1,10 @@
 package com.example.accountdemo.domain.exchange.event;
 
 /**
- * Port (interface) — publish domain event; implement ở infrastructure (log, Kafka…).
+ * Port — publish {@link TradeExecutedEvent}.
  *
- * <p>Hexagonal: domain khai báo "cần publish", không biết cách gửi cụ thể.
+ * <p>Hexagonal: domain nói "đã khớp, hãy thông báo"; infrastructure log / Kafka sau này.
+ * <p>Không phải Aggregate / VO.
  */
 public interface DomainEventPublisher {
 

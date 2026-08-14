@@ -6,9 +6,23 @@ import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import lombok.Getter;
 
 /**
- * Aggregate Root — lệnh giao dịch (mua/bán).
- * Tự bảo vệ rule: LIMIT phải có giá, không cancel khi đã FILLED, match đúng số lượng.
- * Chỉ @Getter — không @Setter/@Data để không bỏ qua match()/cancel().
+ * Aggregate Root — một bản ghi lệnh mua/bán.
+ *
+ * <pre>
+ * orderId               = ORD-BUY-001
+ * accountId             = ACC-001
+ * side                  = BUY
+ * orderType             = LIMIT
+ * tradingPair           = BTC/VND
+ * quantity              = 1
+ * price                 = 60_000_000
+ * filledQuantity        = 0
+ * status                = PENDING
+ * lockedCurrency        = VND
+ * lockedAmountRemaining = 60_000_000
+ * </pre>
+ *
+ * Identity: {@code orderId}. Đổi state qua {@code match()}/{@code cancel()} — không {@code @Setter}.
  */
 @Getter
 public class Order {

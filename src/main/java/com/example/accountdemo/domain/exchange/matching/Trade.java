@@ -5,13 +5,16 @@ import com.example.accountdemo.domain.exchange.shared.Price;
 import com.example.accountdemo.domain.exchange.shared.Quantity;
 
 /**
- * Value Object — mô tả một lần khớp thành công giữa lệnh mua và lệnh bán.
+ * Value Object — một bản ghi nhát khớp trên RAM (chưa lưu DB).
  *
- * <p>Phân loại DDD:
- * <ul>
- *   <li>Immutable, không có identity riêng (so sánh theo giá trị)</li>
- *   <li>Không phải Aggregate — không lưu DB trực tiếp; sinh ra trong {@link OrderMatchingService}</li>
- * </ul>
+ * <pre>
+ * buyOrderId      = ORD-BUY-001
+ * sellOrderId     = ORD-SELL-001
+ * matchedQuantity = 1
+ * matchedPrice    = 60_000_000
+ * </pre>
+ *
+ * Persist = {@link com.example.accountdemo.domain.exchange.trade.model.ExecutedTrade}.
  */
 @Getter
 public final class Trade {

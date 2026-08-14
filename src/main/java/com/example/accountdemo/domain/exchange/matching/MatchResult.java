@@ -5,19 +5,17 @@ import lombok.Getter;
 import com.example.accountdemo.domain.exchange.order.model.Order;
 
 /**
- * Result object — output tạm của {@link OrderMatchingService#match}, không lưu DB.
+ * Result object — output 1 lần gọi match (không phải bản ghi DB).
  *
- * <p>Phân loại DDD:
- * <ul>
- *   <li>Không phải Aggregate — không có identity, không persist</li>
- *   <li>Không phải Value Object — chỉ đóng gói kết quả 1 lần gọi service, không mô tả khái niệm nghiệp vụ</li>
- * </ul>
- *
- * Chứa:
- * <ul>
- *   <li>{@code trades} — các {@link Trade} (VO) đã khớp</li>
- *   <li>{@code affectedOrders} — các {@link Order} (Aggregate) đã đổi status/filledQuantity, cần save</li>
- * </ul>
+ * <pre>
+ * trades = [
+ *   { buyOrderId=ORD-BUY-001, sellOrderId=ORD-SELL-001, qty=1, price=60_000_000 }
+ * ]
+ * affectedOrders = [
+ *   ORD-BUY-001  FILLED            filled=1
+ *   ORD-SELL-001 PARTIALLY_FILLED  filled=1 remaining=1
+ * ]
+ * </pre>
  */
 @Getter
 public final class MatchResult {

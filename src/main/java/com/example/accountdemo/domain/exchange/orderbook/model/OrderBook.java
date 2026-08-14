@@ -12,8 +12,15 @@ import lombok.AccessLevel;
 import lombok.Getter;
 
 /**
- * Aggregate Root — sổ lệnh (order book) cho một cặp giao dịch.
- * Quản lý danh sách lệnh mua (bid) và bán (ask).
+ * Aggregate Root — một bản ghi sổ lệnh (một cặp).
+ *
+ * <pre>
+ * tradingPair = BTC/VND
+ * buyOrders   = [ORD-BUY-001  BUY  LIMIT  qty=1  price=60_000_000  PENDING]
+ * sellOrders  = [ORD-SELL-001 SELL LIMIT  qty=2  price=61_000_000  PENDING]
+ * </pre>
+ *
+ * Không trừ tiền. Khớp do OrderMatchingService. getBuy/SellOrders() trả copy.
  */
 @Getter
 public class OrderBook {

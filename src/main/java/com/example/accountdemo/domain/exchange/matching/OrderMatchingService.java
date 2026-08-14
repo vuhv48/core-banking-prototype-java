@@ -14,17 +14,12 @@ import com.example.accountdemo.domain.exchange.shared.Price;
 import com.example.accountdemo.domain.exchange.shared.Quantity;
 
 /**
- * Domain Service (stateless) — nghiệp vụ khớp lệnh xuyên nhiều Aggregate.
+ * Domain Service — khớp lệnh (stateless), bounded context Exchange.
  *
- * <p>Phân loại DDD:
- * <ul>
- *   <li>Không phải Aggregate — không có id, không lưu DB, không giữ state</li>
- *   <li>Logic không thuộc riêng {@link Order} hay {@link OrderBook} → tách thành service</li>
- * </ul>
- *
- * <p>Ví dụ: Chị B đã đặt bán 5 @ 60M trên sổ.
- * Anh A đặt mua 10 @ 60M → khớp 5; B FILLED; A còn 5 chờ trên sổ (PARTIALLY_FILLED).
- * Trả về {@link MatchResult} cho Application layer biết cần save / publish event gì.
+ * <p>Không phải Aggregate: không id, không persist, không giữ state.
+ * <p>Rule không thuộc riêng {@link Order} hay {@link OrderBook} (cần cả lệnh mới + sổ) → tách service.
+ * <p>Chỉ xử lý RAM: tạo {@link Trade} + đổi filled/status. Không trừ ví — Application settle sau.
+ * <p>Ví dụ: SELL 5 @ 60M trên sổ + BUY 10 @ 60M → khớp 5; SELL FILLED; BUY PARTIALLY_FILLED còn 5.
  */
 public class OrderMatchingService {
 
