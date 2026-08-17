@@ -157,4 +157,18 @@ public class Account {
             throw new IllegalArgumentException("Số tiền phải lớn hơn 0");
         }
     }
+
+    public void freeze() {
+        if (status == AccountStatus.FROZEN) {
+            throw new IllegalStateException("Tài khoản đã bị khóa");
+        }
+        status = AccountStatus.FROZEN;
+    }
+
+    public void unfreeze() {
+        if (status == AccountStatus.ACTIVE) {
+            throw new IllegalStateException("Tài khoản chưa bị khóa");
+        }
+        status = AccountStatus.ACTIVE;
+    }
 }

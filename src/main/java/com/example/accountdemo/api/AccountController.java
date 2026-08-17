@@ -29,6 +29,7 @@ public class AccountController {
     private final CreateAccountApplicationService createAccountApplicationService;
     private final ListOrdersByAccountApplicationService listOrdersByAccountApplicationService;
     private final TransferApplicationService transferApplicationService;
+    private final FreezeAccountApplicationService freezeAccountApplicationService;
 
     @GetMapping("/{accountId}")
     public ResponseEntity<AccountResponse> get(@PathVariable String accountId) {
@@ -93,6 +94,18 @@ public class AccountController {
                 request.amount(),
                 request.currency()
         );
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{accountId}/freeze")
+    public ResponseEntity<Void> freeze(@PathVariable String accountId) {
+        freezeAccountApplicationService.freeze(SecurityUtils.currentUsername(), accountId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{accountId}/unfreeze")
+    public ResponseEntity<Void> unfreeze(@PathVariable String accountId) {
+        freezeAccountApplicationService.unfreeze(SecurityUtils.currentUsername(), accountId);
         return ResponseEntity.ok().build();
     }
 }

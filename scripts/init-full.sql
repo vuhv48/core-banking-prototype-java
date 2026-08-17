@@ -273,7 +273,8 @@ INSERT INTO permissions (name, description, deleted, created_at, updated_at) VAL
     ('ORDER_BOOK_OPEN',  'Mở sổ lệnh mới',     false, NOW(), NOW()),
     ('ACCOUNT_READ',     'Xem tài khoản',      false, NOW(), NOW()),
     ('ACCOUNT_DEPOSIT',  'Nạp tiền',           false, NOW(), NOW()),
-    ('ACCOUNT_WITHDRAW', 'Rút tiền',           false, NOW(), NOW());
+    ('ACCOUNT_WITHDRAW', 'Rút tiền',           false, NOW(), NOW()),
+    ('ACCOUNT_FREEZE',   'Khóa / mở khóa tài khoản', false, NOW(), NOW());
 
 INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
 SELECT 'ORDER_PLACE_API', 'POST', '/api/orders', p.id, true, false, NOW(), NOW()
@@ -310,6 +311,14 @@ FROM permissions p WHERE p.name = 'ACCOUNT_WITHDRAW';
 INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
 SELECT 'ACCOUNT_TRANSFER_API', 'POST', '/api/accounts/transfer', p.id, true, false, NOW(), NOW()
 FROM permissions p WHERE p.name = 'ACCOUNT_WITHDRAW';
+
+INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
+SELECT 'ACCOUNT_FREEZE_API', 'POST', '/api/accounts/*/freeze', p.id, true, false, NOW(), NOW()
+FROM permissions p WHERE p.name = 'ACCOUNT_FREEZE';
+
+INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
+SELECT 'ACCOUNT_UNFREEZE_API', 'POST', '/api/accounts/*/unfreeze', p.id, true, false, NOW(), NOW()
+FROM permissions p WHERE p.name = 'ACCOUNT_FREEZE';
 
 INSERT INTO roles (name, description, deleted, created_at, updated_at) VALUES
     ('ROLE_ADMIN',    'Quản trị viên – toàn quyền',          false, NOW(), NOW()),
