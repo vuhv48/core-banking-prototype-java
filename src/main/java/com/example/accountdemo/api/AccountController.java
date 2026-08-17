@@ -1,15 +1,7 @@
 package com.example.accountdemo.api;
 
-import com.example.accountdemo.api.dto.AccountRequest;
-import com.example.accountdemo.api.dto.AccountResponse;
-import com.example.accountdemo.api.dto.AmountRequest;
-import com.example.accountdemo.api.dto.HoldingRequestItem;
-import com.example.accountdemo.api.dto.OrderResponse;
-import com.example.accountdemo.application.CreateAccountApplicationService;
-import com.example.accountdemo.application.DepositApplicationService;
-import com.example.accountdemo.application.GetAccountApplicationService;
-import com.example.accountdemo.application.ListOrdersByAccountApplicationService;
-import com.example.accountdemo.application.WithdrawApplicationService;
+import com.example.accountdemo.api.dto.*;
+import com.example.accountdemo.application.*;
 import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.exchange.order.model.Order;
 import com.example.accountdemo.infrastructure.security.SecurityUtils;
@@ -36,6 +28,7 @@ public class AccountController {
     private final GetAccountApplicationService getAccountApplicationService;
     private final CreateAccountApplicationService createAccountApplicationService;
     private final ListOrdersByAccountApplicationService listOrdersByAccountApplicationService;
+    private final TransferApplicationService transferApplicationService;
 
     @GetMapping("/{accountId}")
     public ResponseEntity<AccountResponse> get(@PathVariable String accountId) {
@@ -90,5 +83,16 @@ public class AccountController {
             map.put(item.currency(), item.available());
         }
         return map;
+    }
+
+    @PostMapping("/transfer")
+    public ResponseEntity<Void> transferMoney(@RequestBody TransferAccountRequest request) {
+        transferApplicationService.transfer(SecurityUtils.currentUsername(),
+                request.fromAccountId(),
+                request.toAccountId(),
+                request.amount(),
+                request.currency()
+        );
+        return ResponseEntity.ok().build();
     }
 }

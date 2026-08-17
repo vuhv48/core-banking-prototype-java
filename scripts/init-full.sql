@@ -307,6 +307,10 @@ INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, 
 SELECT 'ACCOUNT_WITHDRAW_API', 'POST', '/api/accounts/*/withdraw', p.id, true, false, NOW(), NOW()
 FROM permissions p WHERE p.name = 'ACCOUNT_WITHDRAW';
 
+INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
+SELECT 'ACCOUNT_TRANSFER_API', 'POST', '/api/accounts/transfer', p.id, true, false, NOW(), NOW()
+FROM permissions p WHERE p.name = 'ACCOUNT_WITHDRAW';
+
 INSERT INTO roles (name, description, deleted, created_at, updated_at) VALUES
     ('ROLE_ADMIN',    'Quản trị viên – toàn quyền',          false, NOW(), NOW()),
     ('ROLE_USER',     'Trader – đặt và huỷ lệnh',            false, NOW(), NOW()),
@@ -320,7 +324,7 @@ WHERE r.name = 'ROLE_ADMIN';
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r JOIN permissions p ON p.name IN (
-    'ORDER_PLACE', 'ORDER_CANCEL', 'ORDER_READ', 'ACCOUNT_READ'
+    'ORDER_PLACE', 'ORDER_CANCEL', 'ORDER_READ', 'ACCOUNT_READ', 'ACCOUNT_WITHDRAW'
 )
 WHERE r.name = 'ROLE_USER';
 
