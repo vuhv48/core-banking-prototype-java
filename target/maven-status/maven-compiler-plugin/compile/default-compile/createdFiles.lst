@@ -1,4 +1,3 @@
-com/example/accountdemo/api/dto/AccountResponse$BalanceItem.class
 com/example/accountdemo/AccountdemoApplication.class
 com/example/accountdemo/domain/exchange/event/TradeExecutedEvent.class
 com/example/accountdemo/infrastructure/persistence/account/AccountMapper.class

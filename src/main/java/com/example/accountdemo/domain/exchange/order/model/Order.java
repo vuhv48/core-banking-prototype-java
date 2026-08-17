@@ -186,4 +186,5 @@ public class Order {
     public Quantity getRemainingQuantity() {
         return quantity.minus(filledQuantity);
     }
+
 }

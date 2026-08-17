@@ -112,15 +112,27 @@ Phải có **8 dòng**; `ORDER_READ` xuất hiện **2 lần**. Restart app → 
 
 | Phần | Mô tả |
 |------|--------|
-| **Bank** | Account VND, nạp/rút |
-| **Exchange** | Đặt lệnh BTC/VND, khớp LIMIT/MARKET |
+| **Bank / Wallet** | Account nhiều currency (VND, BTC); `available` + `locked`; nạp/rút |
+| **Exchange** | Đặt lệnh BTC/VND, sổ lệnh, khớp LIMIT (BUY MARKET tạm reject) |
+| **Trade** | Mỗi lần khớp → `Trade` (RAM) → settle ví → lưu bảng `trades` (`ExecutedTrade`) + event log |
 | **Security** | JWT, RBAC + `resources`, login_logs, ErrorStatus |
 
 Kiến trúc: **DDD** + **Hexagonal**. Domain không import Spring Security.
 
+**Trade vs Order (đừng nhầm):**
+
+| | Order | Trade |
+|--|-------|-------|
+| Là gì | Lệnh mua/bán (có thể treo sổ) | **Một nhát khớp** giữa 2 lệnh |
+| Ví dụ | BUY 10 BTC @ 60M | Khớp 5 BTC @ 60M (một lần fill) |
+| DB | bảng `orders` | bảng `trades` |
+| Domain | Aggregate `Order` | VO `Trade` (lúc match) → Entity `ExecutedTrade` (sau settle) |
+
 ---
 
 ## 2. Kiến trúc
+
+### Request đi qua đâu
 
 ```
 Request
@@ -134,6 +146,26 @@ Request
 ```
 
 Lỗi: `RestExceptionHandler` / `JsonErrorWriter` → `ApiResponse` + `ErrorStatus`.
+
+### Ai gọi ai (nhớ cái này)
+
+```
+Controller
+  → Application Service     ← load / save qua Repository
+      → Domain (Account, Order…)   ← chỉ đổi state, không biết DB
+  → Repository (port)
+      → JPA Adapter (infrastructure)
+```
+
+| Layer | Việc |
+|-------|------|
+| **Controller** | Nhận HTTP, map DTO, gọi Application |
+| **Application** | Điều phối use case: `findById` → gọi domain → `save` |
+| **Domain** | Rule nghiệp vụ (`reserve`, `match`…) — **không** gọi Repository |
+| **Repository (port)** | Interface trong domain; Application dùng |
+| **JPA Adapter** | Implement port, nói chuyện với PostgreSQL |
+
+Ví dụ Place Order: Application load `Account` → `account.reserve(...)` → `accountRepository.save` → Matching (domain) → Settle (Application load/save ví + `trades`).
 
 ---
 
@@ -177,10 +209,13 @@ src/main/java/com/example/accountdemo/
 
 ---
 
-## 4. Account (Bank)
+## 4. Account (Bank / Wallet)
+
+Số dư thật nằm bảng `account_balances` (mỗi currency một dòng: `available` + `locked`).
 
 | API | Permission |
 |-----|------------|
+| `GET /api/accounts/{id}` | ACCOUNT_READ |
 | `POST /api/accounts/{id}/deposit` | ACCOUNT_DEPOSIT |
 | `POST /api/accounts/{id}/withdraw` | ACCOUNT_WITHDRAW |
 
@@ -215,9 +250,11 @@ curl -X POST http://localhost:8080/api/accounts/ACC-001/deposit \
 | Class | Loại |
 |-------|------|
 | `Order`, `OrderBook` | Aggregate Root |
-| `Price`, `Quantity`, `Trade` | Value Object |
-| `OrderMatchingService` | Domain Service (khớp trên RAM) |
-| `TradeExecutedEvent` | Domain Event |
+| `Price`, `Quantity`, `TradingPair`, `Trade` | Value Object |
+| `ExecutedTrade` | Entity (lịch sử, bảng `trades`) |
+| `OrderMatchingService` | Domain Service (khớp trên RAM, **không** trừ ví) |
+| `TradeSettlementService` | Application (trừ/cộng ví + save `trades`) |
+| `TradeExecutedEvent` | Domain Event (hiện chỉ log) |
 
 ### Quy tắc khớp
 
@@ -287,8 +324,16 @@ curl -X POST http://localhost:8080/api/orders \
 ```
 
 ```sql
-SELECT id, side, price, quantity, filled_quantity, status
+SELECT id, side, price, quantity, filled_quantity, status,
+       locked_currency, locked_amount_remaining
 FROM orders ORDER BY created_at DESC LIMIT 10;
+
+SELECT id, buy_order_id, sell_order_id, buyer_account_id, seller_account_id,
+       quantity, price
+FROM trades ORDER BY created_at DESC LIMIT 10;
+
+SELECT account_id, currency, available_amount, locked_amount
+FROM account_balances ORDER BY account_id, currency;
 ```
 
 ```bash
@@ -305,13 +350,16 @@ POST /api/orders + Bearer accessToken
   → AuthorizationFilter (có ORDER_PLACE? — đọc bảng resources)
   → OrderController
   → PlaceOrderApplicationService
-      1. LOAD DB → OrderBook (list RAM)
-      2. DOMAIN  → orderMatchingService.match(...)
-      3. SAVE DB → orders + order_books
-      4. EVENT   → TradeExecutedEvent (log)
+      1. Ownership (accountId thuộc user?)
+      2. Reserve ví (available → locked)
+      3. Match trên OrderBook → list Trade (RAM)
+      4. Settle từng Trade (đổi 2 ví + INSERT trades)
+      5. SAVE orders + order_books
+      6. EVENT → TradeExecutedEvent (log)
 ```
 
-`addOrder()` chỉ sửa list Java; persist ở bước 3. Lệnh FILLED remove khỏi sổ nhưng vẫn còn trong bảng `orders`.
+`Trade` = nhát khớp tạm trên RAM. `ExecutedTrade` = bản ghi đã lưu bảng `trades`.  
+Lệnh FILLED gỡ khỏi sổ nhưng vẫn còn trong bảng `orders`.
 
 ---
 
@@ -513,11 +561,12 @@ curl -X POST http://localhost:8080/api/auth/logout \
 | Account | Aggregate Root | `domain.account.model` |
 | Order, OrderBook | Aggregate Root | `domain.exchange.order.model` / `orderbook.model` |
 | Money, Balance, Price, Quantity, Trade, TradingPair | Value Object | `account.model` / `exchange.shared` / `matching` |
+| ExecutedTrade | Entity (lịch sử khớp) | `domain.exchange.trade.model` |
 | OrderMatchingService | Domain Service | `domain.exchange.matching` |
 | MatchResult | Result object | `domain.exchange.matching` |
 | TradeExecutedEvent | Domain Event | `domain.exchange.event` |
 | *Repository | Port | cạnh `model/` của feature |
-| PlaceOrderApplicationService | Application Service | `application` |
+| PlaceOrderApplicationService, TradeSettlementService | Application Service | `application` |
 | JwtAuthFilter, resources, ErrorStatus | Infrastructure / API | `infrastructure` / `api` |
 
 ---
@@ -561,6 +610,8 @@ curl -X POST http://localhost:8080/api/auth/logout \
 | `AuthController.java` | login / refresh / logout |
 | `ErrorStatus.java` | Mã lỗi |
 | `RestExceptionHandler.java` | Map exception → JSON |
+| `TradeSettlementService.java` | Settle ví + lưu `ExecutedTrade` |
+| `ExecutedTrade.java` / bảng `trades` | Lịch sử khớp |
 | `scripts/init-full.sql` | Schema + seed DB (file SQL duy nhất) |
 | **`TAI-LIEU.md`** | **File tài liệu duy nhất** |
 
@@ -695,12 +746,18 @@ Cancel: `order.cancel()` → gỡ sổ → `account.release(locked còn lại)`.
 | Tin `accountId` từ client | `OwnershipGuard` bắt buộc |
 | BUY MARKET | Hiện reject `MARKET_BUY_NOT_SUPPORTED` |
 
-### 14.5 Ví dụ số (test tay)
+### 14.5 Ví dụ số (seed `init-full.sql`)
 
-1. `ACC-001`: VND 10_000_000, BTC 5 (seed `init-full.sql`).
-2. Trader1 BUY LIMIT 1 BTC @ 60_000_000 → locked VND 60_000_000.
-3. Trader2 SELL LIMIT 1 BTC @ 60_000_000 → locked BTC 1.
-4. Khớp: buyer nhận BTC, seller nhận VND; row trong `trades`.
-5. Cancel lệnh treo: `locked` → `available`.
+**Ví (sau lock lệnh treo):**
+- ACC-001: VND available=40M, locked=60M | BTC available=5
+- ACC-002: VND available=5M | BTC available=3, locked=2
+
+**Sổ BTC/VND (PENDING):**
+- ORD-BUY-001: ACC-001 mua 1 BTC @ 60M
+- ORD-SELL-001: ACC-002 bán 2 BTC @ 61M (chưa gặp giá bid → chưa khớp)
+
+**Lịch sử:** TRD-001 — ORD-BUY-HIST / ORD-SELL-HIST, 1 BTC @ 58M (FILLED).
+
+**Test thêm từ API:** trader2 đặt SELL @ 60M → có thể khớp ORD-BUY-001.
 
 **Backlog:** Kafka/Outbox, register/password, GET order-books/trades, BUY MARKET.

@@ -12,6 +12,11 @@
 --
 -- Password mẫu (BCrypt): password123
 -- Users: admin / trader1(ACC-001) / trader2(ACC-002) / readonly1
+--
+-- Sổ lệnh seed (sau khi chạy script):
+--   BID: ORD-BUY-001  ACC-001  mua 1 BTC @ 60_000_000 VND
+--   ASK: ORD-SELL-001 ACC-002  bán 2 BTC @ 61_000_000 VND
+--   (giá chưa gặp → cả hai PENDING trên sổ, ví đã lock khớp từng lệnh)
 -- =============================================================================
 
 BEGIN;
@@ -208,16 +213,58 @@ INSERT INTO accounts (id, status, deleted, created_at, updated_at) VALUES
     ('ACC-003', 'FROZEN', false, NOW(), NOW());
 
 INSERT INTO account_balances (account_id, currency, available_amount, locked_amount, deleted, created_at, updated_at) VALUES
-    ('ACC-001', 'VND', 10000000, 0, false, NOW(), NOW()),
-    ('ACC-001', 'BTC',        5, 0, false, NOW(), NOW()),
-    ('ACC-002', 'VND',  5000000, 0, false, NOW(), NOW()),
-    ('ACC-002', 'BTC',        5, 0, false, NOW(), NOW()),
-    ('ACC-003', 'VND',  2000000, 0, false, NOW(), NOW());
+    ('ACC-001', 'VND',  40000000, 60000000, false, NOW(), NOW()),
+    ('ACC-001', 'BTC',         5,        0, false, NOW(), NOW()),
+    ('ACC-002', 'VND',  5000000,        0, false, NOW(), NOW()),
+    ('ACC-002', 'BTC',         3,        2, false, NOW(), NOW()),
+    ('ACC-003', 'VND',  2000000,        0, false, NOW(), NOW());
 
 INSERT INTO order_books (id, base_currency, quote_currency, deleted, created_at, updated_at) VALUES
     ('BTC/VND', 'BTC', 'VND', false, NOW(), NOW());
 
--- orders / trades: để trống — test place + settle từ API
+-- ─── Orders (PENDING = đang trên sổ; FILLED = đã khớp xong, không load vào sổ) ───
+INSERT INTO orders (
+    id, account_id, side, order_type, base_currency, quote_currency,
+    quantity, price, filled_quantity, status,
+    locked_currency, locked_amount_remaining,
+    deleted, created_at, updated_at
+) VALUES
+    (
+        'ORD-BUY-001', 'ACC-001', 'BUY', 'LIMIT', 'BTC', 'VND',
+        1, 60000000, 0, 'PENDING',
+        'VND', 60000000,
+        false, NOW(), NOW()
+    ),
+    (
+        'ORD-SELL-001', 'ACC-002', 'SELL', 'LIMIT', 'BTC', 'VND',
+        2, 61000000, 0, 'PENDING',
+        'BTC', 2,
+        false, NOW(), NOW()
+    ),
+    (
+        'ORD-BUY-HIST', 'ACC-001', 'BUY', 'LIMIT', 'BTC', 'VND',
+        1, 58000000, 1, 'FILLED',
+        'VND', 0,
+        false, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'
+    ),
+    (
+        'ORD-SELL-HIST', 'ACC-002', 'SELL', 'LIMIT', 'BTC', 'VND',
+        1, 58000000, 1, 'FILLED',
+        'BTC', 0,
+        false, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'
+    );
+
+-- Lịch sử khớp (ORD-BUY-HIST ↔ ORD-SELL-HIST, 1 BTC @ 58M)
+INSERT INTO trades (
+    id, buy_order_id, sell_order_id, buyer_account_id, seller_account_id,
+    base_currency, quote_currency, quantity, price,
+    deleted, created_at, updated_at
+) VALUES (
+    'TRD-001',
+    'ORD-BUY-HIST', 'ORD-SELL-HIST', 'ACC-001', 'ACC-002',
+    'BTC', 'VND', 1, 58000000,
+    false, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'
+);
 
 INSERT INTO permissions (name, description, deleted, created_at, updated_at) VALUES
     ('ORDER_PLACE',      'Đặt lệnh mua/bán',  false, NOW(), NOW()),
@@ -307,7 +354,13 @@ COMMIT;
 SELECT 'accounts' AS t, COUNT(*) FROM accounts
 UNION ALL SELECT 'account_balances', COUNT(*) FROM account_balances
 UNION ALL SELECT 'order_books', COUNT(*) FROM order_books
+UNION ALL SELECT 'orders', COUNT(*) FROM orders
+UNION ALL SELECT 'trades', COUNT(*) FROM trades
 UNION ALL SELECT 'permissions', COUNT(*) FROM permissions
 UNION ALL SELECT 'resources', COUNT(*) FROM resources
 UNION ALL SELECT 'roles', COUNT(*) FROM roles
 UNION ALL SELECT 'users', COUNT(*) FROM users;
+
+-- Sổ + ví sau seed (kiểm tra lock khớp lệnh PENDING)
+-- SELECT id, side, price, quantity, status, locked_currency, locked_amount_remaining FROM orders ORDER BY side, price;
+-- SELECT account_id, currency, available_amount, locked_amount FROM account_balances ORDER BY account_id, currency;
