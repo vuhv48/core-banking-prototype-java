@@ -2,6 +2,8 @@ package com.example.accountdemo.domain.exchange.order;
 
 import com.example.accountdemo.domain.exchange.order.model.Order;
 
+import java.util.List;
+
 /**
  * Port (Repository) — persistence của aggregate {@link Order}.
  *
@@ -15,4 +17,6 @@ public interface OrderRepository {
 
     /** Lưu lệnh sau place / match / cancel. */
     void save(Order order);
+
+    List<Order> findByAccountId(String accountId);
 }

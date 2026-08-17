@@ -3,6 +3,7 @@ package com.example.accountdemo.infrastructure.persistence.exchange;
 import com.example.accountdemo.domain.exchange.order.model.Order;
 import com.example.accountdemo.domain.exchange.order.OrderRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
 import lombok.RequiredArgsConstructor;
@@ -49,5 +50,12 @@ public class OrderRepositoryJpaImpl implements OrderRepository {
         }
 
         orderJpaRepository.save(entity);
+    }
+
+    @Override
+    public List<Order> findByAccountId(String accountId) {
+        return orderJpaRepository.findByAccountIdAndDeletedFalse(accountId).stream()
+                .map(orderMapper::toDomain)
+                .toList();
     }
 }

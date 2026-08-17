@@ -12,4 +12,6 @@ public interface OrderJpaRepository extends JpaRepository<OrderJpaEntity, String
 
     /** Lệnh thuộc một cặp tiền (để ghép OrderBook). */
     List<OrderJpaEntity> findByBaseCurrencyAndQuoteCurrency(String baseCurrency, String quoteCurrency);
+
+    List<OrderJpaEntity> findByAccountIdAndDeletedFalse(String accountId);
 }

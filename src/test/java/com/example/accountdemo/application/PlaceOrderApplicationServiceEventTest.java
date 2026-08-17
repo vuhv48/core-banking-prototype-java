@@ -161,6 +161,11 @@ class PlaceOrderApplicationServiceEventTest {
         public void save(Order order) {
             store.put(order.getOrderId(), order);
         }
+
+        @Override
+        public List<Order> findByAccountId(String accountId) {
+            return List.of();
+        }
     }
 
     private static final class FakeOrderBookRepository implements OrderBookRepository {

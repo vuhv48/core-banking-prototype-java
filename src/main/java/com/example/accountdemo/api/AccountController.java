@@ -4,13 +4,17 @@ import com.example.accountdemo.api.dto.AccountRequest;
 import com.example.accountdemo.api.dto.AccountResponse;
 import com.example.accountdemo.api.dto.AmountRequest;
 import com.example.accountdemo.api.dto.HoldingRequestItem;
+import com.example.accountdemo.api.dto.OrderResponse;
 import com.example.accountdemo.application.CreateAccountApplicationService;
 import com.example.accountdemo.application.DepositApplicationService;
 import com.example.accountdemo.application.GetAccountApplicationService;
+import com.example.accountdemo.application.ListOrdersByAccountApplicationService;
 import com.example.accountdemo.application.WithdrawApplicationService;
 import com.example.accountdemo.domain.account.model.Account;
+import com.example.accountdemo.domain.exchange.order.model.Order;
 import com.example.accountdemo.infrastructure.security.SecurityUtils;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +35,7 @@ public class AccountController {
     private final DepositApplicationService depositApplicationService;
     private final GetAccountApplicationService getAccountApplicationService;
     private final CreateAccountApplicationService createAccountApplicationService;
+    private final ListOrdersByAccountApplicationService listOrdersByAccountApplicationService;
 
     @GetMapping("/{accountId}")
     public ResponseEntity<AccountResponse> get(@PathVariable String accountId) {
@@ -64,6 +69,15 @@ public class AccountController {
                 toInitialAvailable(request)
         );
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{accountId}/orders")
+    public ResponseEntity<List<OrderResponse>> getOrdersByAccountId(@PathVariable String accountId) {
+        List<Order> orders = listOrdersByAccountApplicationService.getOrdersByAccountId(
+                SecurityUtils.currentUsername(),
+                accountId
+        );
+        return ResponseEntity.ok(orders.stream().map(OrderResponse::from).toList());
     }
 
     /** API DTO → map currency/available cho Application (giống deposit/withdraw: không đẩy DTO xuống service). */
