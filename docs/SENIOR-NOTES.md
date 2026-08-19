@@ -42,7 +42,7 @@ Lý do: đã code được nhưng cần **bản đồ mental model** — biết 
 
 ### A0 — Ba vòng “hiểu hết hệ thống”
 
-**Status tổng A0:** [ ] Vòng 1 / [ ] Vòng 2 / [ ] Vòng 3 / [ ] Xong cả 3
+**Status tổng A0:** [x] Vòng 1 / [ ] Vòng 2 / [ ] Vòng 3 / [ ] Xong cả 3
 
 #### Vòng 1 — Luồng tiền (available / locked)
 
@@ -61,7 +61,73 @@ withdraw / transfer → trừ available
 
 **Ghi chú của tôi (Vòng 1):**
 
-*(viết ở đây — ví dụ: BUY reserve VND = price × qty, SELL reserve BTC = qty)*
+```mermaid
+flowchart LR
+  A["1. deposit<br/>available tăng"] --> B["2. place order<br/>reserve: available → locked"]
+  B --> C["3. match<br/>Order.match — ví chưa đổi"]
+  C --> D["4. settle<br/>consumeLocked + credit"]
+  D --> E["5. withdraw / transfer<br/>trừ available"]
+  B --> F["cancel<br/>release: locked → available"]
+```
+
+**1. `deposit` — nạp từ ngoài**
+
+- Class/method: `DepositApplicationService.deposit` → `Account.deposit` → `Balance.credit`
+- Available **tăng**, locked **không đổi**
+- FROZEN vẫn nạp được
+- **Không nhầm với `credit` lúc settle** (xem bước 4)
+
+**2. `place order` — treo tiền**
+
+- Class/method: `PlaceOrderApplicationService` → `Account.reserve` → `Balance.reserve` → `Order.initializeLock`
+- Available **giảm**, locked **tăng** (cùng số)
+- BUY: lock **VND** = `price × quantity`
+- SELL: lock **BTC** = `quantity`
+- DB: `account_balances.locked` + `orders.locked_amount_remaining`
+
+**3. `match` — khớp trên sổ lệnh**
+
+- Class/method: `OrderMatchingService.match` → `Order.match`
+- Chỉ đổi `filledQuantity` + `status` (PENDING → PARTIALLY_FILLED / FILLED)
+- **Ví không đổi** — chưa consumeLocked, chưa credit
+- Tạo `Trade` (VO trên RAM), chưa INSERT bảng `trades`
+
+**4. `settle` — tất toán 2 ví**
+
+- Class/method: `TradeSettlementService.settle`
+  - Bên chi: `Account.consumeLocked` → `Balance.consumeLocked` (locked **giảm**, available **không tăng lại** — tiền đi thật)
+  - Bên nhận: `Account.credit` → `Balance.credit` (available **tăng**)
+  - `Order.reduceLock` trên lệnh vừa khớp
+- Buyer: mất VND locked, nhận BTC available
+- Seller: mất BTC locked, nhận VND available
+- BUY LIMIT giá cao hơn giá khớp: `release` phần VND lock thừa
+- Lưu `ExecutedTrade` → bảng `trades`
+- **`credit` ≠ `deposit`:** credit = nhận sau khớp; deposit = admin nạp từ ngoài
+
+**5. `cancel` — hủy phần còn treo**
+
+- Class/method: `CancelOrderApplicationService` → `Account.release` → `Balance.release` → `Order.reduceLock` / `Order.cancel`
+- Locked **giảm**, available **tăng** (trả lại)
+- Chỉ hoàn **lock còn lại** — phần đã settle **không đảo**
+
+**6. `withdraw` / `transfer` — trừ available**
+
+- Withdraw: `WithdrawApplicationService` → `Account.withdraw` → `Balance.debitAvailable` — available **giảm**
+- Transfer: `TransferApplicationService` → `from.withdraw` + `to.deposit` — available bên gửi giảm, bên nhận tăng
+- Không đụng locked; FROZEN không withdraw / không transfer **from**
+
+**Bảng nhớ nhanh**
+
+| Bước | Available | Locked |
+|---|---|---|
+| deposit | ↑ | — |
+| reserve (place) | ↓ | ↑ |
+| match | — | — |
+| consumeLocked (settle chi) | — | ↓ (tiền đi) |
+| credit (settle nhận) | ↑ | — |
+| release (cancel / lock thừa) | ↑ | ↓ |
+| withdraw | ↓ | — |
+| transfer | from ↓ / to ↑ | — |
 
 **Pass:** Giải thích được “tiền đang ở available hay locked” tại mỗi bước, không nhầm deposit vs credit.
 
@@ -333,7 +399,7 @@ mvn test
 ### Giai đoạn 1 — Hiểu hệ thống (làm trước)
 
 ```
-[ ] A0 Vòng 1 — Luồng tiền
+[x] A0 Vòng 1 — Luồng tiền
 [ ] A0 Vòng 2 — Luồng quyền
 [ ] A0 Vòng 3 — Luồng trạng thái
 [ ] A1 Place order flow
