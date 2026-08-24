@@ -2,6 +2,8 @@ package com.example.accountdemo.api.dto;
 
 import com.example.accountdemo.domain.exchange.order.model.Order;
 
+import java.math.BigDecimal;
+
 /**
  * Response chi tiết lệnh (sau GET/cancel).
  *
@@ -13,12 +15,12 @@ public record OrderResponse(
         String side,
         String orderType,
         String tradingPair,
-        long quantity,
-        Long price,
-        long filledQuantity,
+        BigDecimal quantity,
+        BigDecimal price,
+        BigDecimal filledQuantity,
         String status,
         String lockedCurrency,
-        long lockedAmountRemaining
+        BigDecimal lockedAmountRemaining
 ) {
     /** Map domain Order → DTO. */
     public static OrderResponse from(Order order) {

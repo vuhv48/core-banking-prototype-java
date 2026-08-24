@@ -14,6 +14,7 @@ import java.util.List;
 public class SecurityProperties {
 
     private List<String> publicPaths = new ArrayList<>();
+    private List<String> allowedOrigins = new ArrayList<>();
 
     public List<String> getPublicPaths() {
         return publicPaths;
@@ -21,5 +22,13 @@ public class SecurityProperties {
 
     public void setPublicPaths(List<String> publicPaths) {
         this.publicPaths = publicPaths;
+    }
+
+    public List<String> getAllowedOrigins() {
+        return allowedOrigins;
+    }
+
+    public void setAllowedOrigins(List<String> allowedOrigins) {
+        this.allowedOrigins = allowedOrigins;
     }
 }

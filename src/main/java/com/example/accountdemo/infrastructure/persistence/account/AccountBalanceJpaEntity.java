@@ -13,6 +13,8 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -36,6 +38,6 @@ public class AccountBalanceJpaEntity extends BaseEntity {
     private AccountJpaEntity account;
 
     private String currency;
-    private long availableAmount;
-    private long lockedAmount;
+    private BigDecimal availableAmount;
+    private BigDecimal lockedAmount;
 }

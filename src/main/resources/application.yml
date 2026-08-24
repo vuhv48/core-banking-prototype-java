@@ -21,3 +21,7 @@ security:
   public-paths:
     - /api/auth/login
     - /api/auth/refresh
+    - /api/auth/register
+  # Origin FE được phép gọi API (CORS). Thêm origin prod khi deploy.
+  allowed-origins:
+    - http://localhost:5173

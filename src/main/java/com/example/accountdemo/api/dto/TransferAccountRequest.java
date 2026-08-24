@@ -1,9 +1,11 @@
 package com.example.accountdemo.api.dto;
 
+import java.math.BigDecimal;
+
 public record TransferAccountRequest(
         String fromAccountId,
         String toAccountId,
-        long amount,
+        BigDecimal amount,
         String currency
 ) {
 }

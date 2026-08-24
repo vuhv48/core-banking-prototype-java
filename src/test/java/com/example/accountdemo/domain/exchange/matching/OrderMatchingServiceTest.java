@@ -10,6 +10,7 @@ import com.example.accountdemo.domain.exchange.shared.Quantity;
 import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,9 +60,9 @@ class OrderMatchingServiceTest {
         MatchResult result = matchingService.match(buy, orderBook);
 
         assertEquals(1, result.getTrades().size());
-        assertEquals(30, result.getTrades().get(0).getMatchedQuantity().getValue());
+        assertEquals(0, BigDecimal.valueOf(30).compareTo(result.getTrades().get(0).getMatchedQuantity().getValue()));
         assertEquals(OrderStatus.PARTIALLY_FILLED, buy.getStatus());
-        assertEquals(20, buy.getRemainingQuantity().getValue());
+        assertEquals(0, BigDecimal.valueOf(20).compareTo(buy.getRemainingQuantity().getValue()));
         assertEquals(OrderStatus.FILLED, result.getAffectedOrders().stream()
                 .filter(o -> o.getOrderId().equals("SELL-1")).findFirst().orElseThrow().getStatus());
         assertEquals(1, orderBook.getBuyOrders().size());
@@ -91,7 +92,7 @@ class OrderMatchingServiceTest {
 
         assertEquals(1, result.getTrades().size());
         assertEquals("SELL-LOW", result.getTrades().get(0).getSellOrderId());
-        assertEquals(60_000_000, result.getTrades().get(0).getMatchedPrice().getValue());
+        assertEquals(0, BigDecimal.valueOf(60_000_000).compareTo(result.getTrades().get(0).getMatchedPrice().getValue()));
     }
 
     @Test
@@ -105,7 +106,7 @@ class OrderMatchingServiceTest {
 
         assertEquals(2, result.getTrades().size());
         assertEquals(OrderStatus.FILLED, buy.getStatus());
-        assertEquals(0, buy.getRemainingQuantity().getValue());
+        assertEquals(0, BigDecimal.ZERO.compareTo(buy.getRemainingQuantity().getValue()));
         assertEquals(1, orderBook.getSellOrders().size());
         assertEquals("SELL-3", orderBook.getSellOrders().get(0).getOrderId());
     }

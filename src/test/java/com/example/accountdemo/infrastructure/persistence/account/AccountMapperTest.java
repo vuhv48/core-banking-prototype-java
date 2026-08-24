@@ -3,7 +3,7 @@ package com.example.accountdemo.infrastructure.persistence.account;
 import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.account.model.AccountStatus;
 import com.example.accountdemo.domain.account.model.Balance;
-import com.example.accountdemo.domain.account.model.Money;
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -26,8 +26,8 @@ class AccountMapperTest {
         assertEquals("ACTIVE", entity.getStatus());
         assertEquals(1, entity.getBalances().size());
         assertEquals("VND", entity.getBalances().get(0).getCurrency());
-        assertEquals(100_000, entity.getBalances().get(0).getAvailableAmount());
-        assertEquals(0, entity.getBalances().get(0).getLockedAmount());
+        assertEquals(0, BigDecimal.valueOf(100_000).compareTo(entity.getBalances().get(0).getAvailableAmount()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(entity.getBalances().get(0).getLockedAmount()));
     }
 
     @Test
@@ -37,15 +37,15 @@ class AccountMapperTest {
         entity.setStatus("FROZEN");
         AccountBalanceJpaEntity balance = new AccountBalanceJpaEntity();
         balance.setCurrency("VND");
-        balance.setAvailableAmount(200_000);
-        balance.setLockedAmount(0);
+        balance.setAvailableAmount(BigDecimal.valueOf(200_000));
+        balance.setLockedAmount(BigDecimal.ZERO);
         balance.setDeleted(false);
         entity.getBalances().add(balance);
 
         Account account = accountMapper.toDomain(entity);
 
         assertEquals("ACC-002", account.getAccountId());
-        assertEquals(200_000, account.getAvailable("VND").getAmount());
+        assertEquals(0, BigDecimal.valueOf(200_000).compareTo(account.getAvailable("VND").getAmount()));
         assertEquals(AccountStatus.FROZEN, account.getStatus());
     }
 
@@ -57,14 +57,14 @@ class AccountMapperTest {
 
         AccountBalanceJpaEntity vnd = new AccountBalanceJpaEntity();
         vnd.setCurrency("VND");
-        vnd.setAvailableAmount(9_000_000);
-        vnd.setLockedAmount(1_000_000);
+        vnd.setAvailableAmount(BigDecimal.valueOf(9_000_000));
+        vnd.setLockedAmount(BigDecimal.valueOf(1_000_000));
         vnd.setDeleted(false);
 
         AccountBalanceJpaEntity btc = new AccountBalanceJpaEntity();
         btc.setCurrency("BTC");
-        btc.setAvailableAmount(2);
-        btc.setLockedAmount(0);
+        btc.setAvailableAmount(BigDecimal.valueOf(2));
+        btc.setLockedAmount(BigDecimal.ZERO);
         btc.setDeleted(false);
 
         entity.getBalances().add(vnd);
@@ -72,9 +72,9 @@ class AccountMapperTest {
 
         Account account = accountMapper.toDomain(entity);
 
-        assertEquals(9_000_000, account.getAvailable("VND").getAmount());
-        assertEquals(1_000_000, account.getLocked("VND").getAmount());
-        assertEquals(2, account.getAvailable("BTC").getAmount());
+        assertEquals(0, BigDecimal.valueOf(9_000_000).compareTo(account.getAvailable("VND").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(1_000_000).compareTo(account.getLocked("VND").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(2).compareTo(account.getAvailable("BTC").getAmount()));
     }
 
     @Test
@@ -86,9 +86,9 @@ class AccountMapperTest {
 
         Account restored = accountMapper.toDomain(accountMapper.toEntity(original));
 
-        assertEquals(8_000_000, restored.getAvailable("VND").getAmount());
-        assertEquals(2_000_000, restored.getLocked("VND").getAmount());
-        assertEquals(3, restored.getAvailable("BTC").getAmount());
-        assertEquals(1, restored.getLocked("BTC").getAmount());
+        assertEquals(0, BigDecimal.valueOf(8_000_000).compareTo(restored.getAvailable("VND").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(2_000_000).compareTo(restored.getLocked("VND").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(3).compareTo(restored.getAvailable("BTC").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(1).compareTo(restored.getLocked("BTC").getAmount()));
     }
 }

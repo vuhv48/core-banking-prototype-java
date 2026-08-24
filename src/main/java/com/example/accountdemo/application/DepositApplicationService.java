@@ -3,6 +3,7 @@ package com.example.accountdemo.application;
 import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.account.model.Money;
+import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +21,7 @@ public class DepositApplicationService {
     /**
      * Nạp amount/currency vào tài khoản; tăng available của đồng tương ứng.
      */
-    public void deposit(String accountId, long amount, String currency) {
+    public void deposit(String accountId, BigDecimal amount, String currency) {
         Money money = new Money(amount, currency);
         Account account = accountRepository.findById(accountId);
         if (account == null) {

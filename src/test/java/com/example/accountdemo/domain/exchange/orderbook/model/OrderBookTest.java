@@ -7,6 +7,7 @@ import com.example.accountdemo.domain.exchange.shared.Price;
 import com.example.accountdemo.domain.exchange.shared.Quantity;
 import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import org.junit.jupiter.api.BeforeEach;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,7 +55,7 @@ class OrderBookTest {
         orderBook.addOrder(buyOrder("BUY-3", 59_000_000));
 
         assertTrue(orderBook.getBestBid().isPresent());
-        assertEquals(60_000_000, orderBook.getBestBid().get().getValue());
+        assertEquals(0, BigDecimal.valueOf(60_000_000).compareTo(orderBook.getBestBid().get().getValue()));
     }
 
     @Test
@@ -64,6 +65,6 @@ class OrderBookTest {
         orderBook.addOrder(sellOrder("SELL-3", 63_000_000));
 
         assertTrue(orderBook.getBestAsk().isPresent());
-        assertEquals(61_000_000, orderBook.getBestAsk().get().getValue());
+        assertEquals(0, BigDecimal.valueOf(61_000_000).compareTo(orderBook.getBestAsk().get().getValue()));
     }
 }

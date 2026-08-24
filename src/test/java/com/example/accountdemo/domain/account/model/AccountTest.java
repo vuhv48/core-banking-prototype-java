@@ -1,5 +1,6 @@
 package com.example.accountdemo.domain.account.model;
 
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ class AccountTest {
 
         account.withdraw(new Money(30_000, "VND"));
 
-        assertEquals(70_000, account.getAvailable("VND").getAmount());
+        assertEquals(0, BigDecimal.valueOf(70_000).compareTo(account.getAvailable("VND").getAmount()));
     }
 
     @Test
@@ -38,7 +39,7 @@ class AccountTest {
 
         account.withdraw(new Money(100_000, "VND"));
 
-        assertEquals(0, account.getAvailable("VND").getAmount());
+        assertEquals(0, BigDecimal.ZERO.compareTo(account.getAvailable("VND").getAmount()));
     }
 
     @Test
@@ -55,7 +56,7 @@ class AccountTest {
 
         account.deposit(new Money(50_000, "VND"));
 
-        assertEquals(150_000, account.getAvailable("VND").getAmount());
+        assertEquals(0, BigDecimal.valueOf(150_000).compareTo(account.getAvailable("VND").getAmount()));
     }
 
     @Test
@@ -64,7 +65,7 @@ class AccountTest {
 
         account.deposit(new Money(50_000, "VND"));
 
-        assertEquals(150_000, account.getAvailable("VND").getAmount());
+        assertEquals(0, BigDecimal.valueOf(150_000).compareTo(account.getAvailable("VND").getAmount()));
     }
 
     @Test
@@ -88,8 +89,8 @@ class AccountTest {
 
         account.reserve(new Money(1_000_000, "VND"));
 
-        assertEquals(9_000_000, account.getAvailable("VND").getAmount());
-        assertEquals(1_000_000, account.getLocked("VND").getAmount());
+        assertEquals(0, BigDecimal.valueOf(9_000_000).compareTo(account.getAvailable("VND").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(1_000_000).compareTo(account.getLocked("VND").getAmount()));
     }
 
     @Test
@@ -107,8 +108,8 @@ class AccountTest {
 
         account.release(new Money(1_000_000, "VND"));
 
-        assertEquals(10_000_000, account.getAvailable("VND").getAmount());
-        assertEquals(0, account.getLocked("VND").getAmount());
+        assertEquals(0, BigDecimal.valueOf(10_000_000).compareTo(account.getAvailable("VND").getAmount()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(account.getLocked("VND").getAmount()));
     }
 
     @Test
@@ -128,10 +129,10 @@ class AccountTest {
         seller.consumeLocked(new Money(1, "BTC"));
         seller.credit(new Money(1_000_000, "VND"));
 
-        assertEquals(9_000_000, buyer.getAvailable("VND").getAmount());
-        assertEquals(0, buyer.getLocked("VND").getAmount());
-        assertEquals(1, buyer.getAvailable("BTC").getAmount());
-        assertEquals(1_000_000, seller.getAvailable("VND").getAmount());
-        assertEquals(0, seller.getAvailable("BTC").getAmount());
+        assertEquals(0, BigDecimal.valueOf(9_000_000).compareTo(buyer.getAvailable("VND").getAmount()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(buyer.getLocked("VND").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(1).compareTo(buyer.getAvailable("BTC").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(1_000_000).compareTo(seller.getAvailable("VND").getAmount()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(seller.getAvailable("BTC").getAmount()));
     }
 }

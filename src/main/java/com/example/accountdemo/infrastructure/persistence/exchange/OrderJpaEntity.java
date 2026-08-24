@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
+
 /**
  * JPA entity bảng {@code orders}.
  *
@@ -25,10 +27,10 @@ public class OrderJpaEntity extends BaseEntity {
     private String orderType;
     private String baseCurrency;
     private String quoteCurrency;
-    private long quantity;
-    private Long price;
-    private long filledQuantity;
+    private BigDecimal quantity;
+    private BigDecimal price;
+    private BigDecimal filledQuantity;
     private String status;
     private String lockedCurrency;
-    private long lockedAmountRemaining;
+    private BigDecimal lockedAmountRemaining;
 }

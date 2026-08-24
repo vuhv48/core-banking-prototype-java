@@ -13,6 +13,8 @@ public record LoginResponse(
         String tokenType,
         long accessExpiresInSeconds,
         long refreshExpiresInSeconds,
-        List<String> permissions
+        List<String> permissions,
+        List<String> roles,
+        String accountId
 ) {
 }

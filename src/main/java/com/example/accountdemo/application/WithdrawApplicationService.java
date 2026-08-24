@@ -3,6 +3,7 @@ package com.example.accountdemo.application;
 import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.account.model.Money;
+import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +21,7 @@ public class WithdrawApplicationService {
     /**
      * Rút amount/currency khỏi tài khoản; giảm available nếu đủ điều kiện.
      */
-    public void withdraw(String accountId, long amount, String currency) {
+    public void withdraw(String accountId, BigDecimal amount, String currency) {
         Money money = new Money(amount, currency);
 
         Account account = accountRepository.findById(accountId);

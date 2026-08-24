@@ -5,6 +5,7 @@ import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.account.model.AccountStatus;
 import com.example.accountdemo.domain.account.model.Balance;
 import com.example.accountdemo.domain.account.model.Money;
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -36,9 +37,9 @@ class WithdrawApplicationServiceTest {
         Account account = new Account("ACC-001", AccountStatus.ACTIVE, holdings);
         when(accountRepository.findById("ACC-001")).thenReturn(account);
 
-        withdrawApplicationService.withdraw("ACC-001", 30_000, "VND");
+        withdrawApplicationService.withdraw("ACC-001", BigDecimal.valueOf(30_000), "VND");
 
-        assertEquals(70_000, account.getAvailable("VND").getAmount());
+        assertEquals(0, BigDecimal.valueOf(70_000).compareTo(account.getAvailable("VND").getAmount()));
         verify(accountRepository).save(account);
     }
 
@@ -47,7 +48,7 @@ class WithdrawApplicationServiceTest {
         when(accountRepository.findById("UNKNOWN")).thenReturn(null);
 
         assertThrows(IllegalArgumentException.class,
-                () -> withdrawApplicationService.withdraw("UNKNOWN", 10_000, "VND"));
+                () -> withdrawApplicationService.withdraw("UNKNOWN", BigDecimal.valueOf(10_000), "VND"));
 
         verify(accountRepository, never()).save(any());
     }

@@ -2,6 +2,8 @@ package com.example.accountdemo.domain.account.model;
 
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,7 +18,7 @@ class MoneyTest {
 
         Money result = a.add(b);
 
-        assertEquals(150_000, result.getAmount());
+        assertEquals(0, BigDecimal.valueOf(150_000).compareTo(result.getAmount()));
         assertEquals("VND", result.getCurrency());
     }
 
@@ -27,7 +29,7 @@ class MoneyTest {
 
         Money result = a.subtract(b);
 
-        assertEquals(70_000, result.getAmount());
+        assertEquals(0, BigDecimal.valueOf(70_000).compareTo(result.getAmount()));
     }
 
     @Test

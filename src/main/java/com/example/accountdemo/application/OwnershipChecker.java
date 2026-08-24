@@ -15,6 +15,11 @@ public interface OwnershipChecker {
     void requireAccountAccess(String username, String accountId);
 
     /**
+     * Đảm bảo user có ROLE_ADMIN (vd. list toàn bộ account).
+     */
+    void requireAdmin(String username);
+
+    /**
      * Đảm bảo user sở hữu lệnh (qua account gắn lệnh); nếu không thì chặn request.
      */
     void requireOrderAccess(String username, Order order);

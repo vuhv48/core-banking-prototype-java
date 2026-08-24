@@ -153,7 +153,7 @@ public class Account {
         if (amount == null) {
             throw new IllegalArgumentException("amount không được null");
         }
-        if (amount.isNegative() || amount.getAmount() == 0) {
+        if (amount.isNegative() || amount.isZero()) {
             throw new IllegalArgumentException("Số tiền phải lớn hơn 0");
         }
     }

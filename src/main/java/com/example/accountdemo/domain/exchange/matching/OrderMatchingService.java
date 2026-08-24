@@ -64,7 +64,7 @@ public class OrderMatchingService {
 
             // Khớp số nhỏ hơn giữa remaining hai bên (vd mua 10, bán 5 → khớp 5)
             Quantity matchQty = incomingOrder.getRemainingQuantity().getValue()
-                    <= opposite.getRemainingQuantity().getValue()
+                    .compareTo(opposite.getRemainingQuantity().getValue()) <= 0
                     ? incomingOrder.getRemainingQuantity()
                     : opposite.getRemainingQuantity();
 
@@ -147,7 +147,7 @@ public class OrderMatchingService {
             return false;
         }
         // Gặp nhau khi người mua chịu trả >= giá người bán hỏi
-        return buyPrice.getValue() >= sellPrice.getValue();
+        return buyPrice.getValue().compareTo(sellPrice.getValue()) >= 0;
     }
 
     private Trade createTrade(Order incoming, Order opposite, Quantity qty, Price price) {

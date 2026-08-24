@@ -52,8 +52,8 @@ CREATE TABLE account_balances (
     id               BIGSERIAL PRIMARY KEY,
     account_id       VARCHAR(255) NOT NULL REFERENCES accounts(id),
     currency         VARCHAR(255),
-    available_amount BIGINT       NOT NULL DEFAULT 0,
-    locked_amount    BIGINT       NOT NULL DEFAULT 0,
+    available_amount NUMERIC(36, 8) NOT NULL DEFAULT 0,
+    locked_amount    NUMERIC(36, 8) NOT NULL DEFAULT 0,
     deleted          BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at       TIMESTAMP    NOT NULL DEFAULT NOW(),
     created_by       VARCHAR(255),
@@ -81,12 +81,12 @@ CREATE TABLE orders (
     order_type               VARCHAR(255),
     base_currency            VARCHAR(255),
     quote_currency           VARCHAR(255),
-    quantity                 BIGINT       NOT NULL DEFAULT 0,
-    price                    BIGINT,
-    filled_quantity          BIGINT       NOT NULL DEFAULT 0,
+    quantity                 NUMERIC(36, 8) NOT NULL DEFAULT 0,
+    price                    NUMERIC(36, 8),
+    filled_quantity          NUMERIC(36, 8) NOT NULL DEFAULT 0,
     status                   VARCHAR(255),
     locked_currency          VARCHAR(255),
-    locked_amount_remaining  BIGINT       NOT NULL DEFAULT 0,
+    locked_amount_remaining  NUMERIC(36, 8) NOT NULL DEFAULT 0,
     deleted                  BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at               TIMESTAMP    NOT NULL DEFAULT NOW(),
     created_by               VARCHAR(255),
@@ -102,8 +102,8 @@ CREATE TABLE trades (
     seller_account_id   VARCHAR(255) NOT NULL,
     base_currency       VARCHAR(255) NOT NULL,
     quote_currency      VARCHAR(255) NOT NULL,
-    quantity            BIGINT       NOT NULL,
-    price               BIGINT       NOT NULL,
+    quantity            NUMERIC(36, 8) NOT NULL,
+    price               NUMERIC(36, 8) NOT NULL,
     deleted             BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
     created_by          VARCHAR(255),
@@ -274,7 +274,9 @@ INSERT INTO permissions (name, description, deleted, created_at, updated_at) VAL
     ('ACCOUNT_READ',     'Xem tài khoản',      false, NOW(), NOW()),
     ('ACCOUNT_DEPOSIT',  'Nạp tiền',           false, NOW(), NOW()),
     ('ACCOUNT_WITHDRAW', 'Rút tiền',           false, NOW(), NOW()),
-    ('ACCOUNT_FREEZE',   'Khóa / mở khóa tài khoản', false, NOW(), NOW());
+    ('ACCOUNT_FREEZE',   'Khóa / mở khóa tài khoản', false, NOW(), NOW()),
+    ('ACCOUNT_CREATE',   'Tạo ví (account)',   false, NOW(), NOW()),
+    ('USER_CREATE',      'Admin tạo user login', false, NOW(), NOW());
 
 INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
 SELECT 'ORDER_PLACE_API', 'POST', '/api/orders', p.id, true, false, NOW(), NOW()
@@ -299,6 +301,19 @@ FROM permissions p WHERE p.name = 'ORDER_BOOK_OPEN';
 INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
 SELECT 'ACCOUNT_READ_API', 'GET', '/api/accounts/**', p.id, true, false, NOW(), NOW()
 FROM permissions p WHERE p.name = 'ACCOUNT_READ';
+
+-- List all accounts (path chính xác, không khớp **/segment)
+INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
+SELECT 'ACCOUNT_LIST_API', 'GET', '/api/accounts', p.id, true, false, NOW(), NOW()
+FROM permissions p WHERE p.name = 'ACCOUNT_READ';
+
+INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
+SELECT 'ACCOUNT_CREATE_API', 'POST', '/api/accounts', p.id, true, false, NOW(), NOW()
+FROM permissions p WHERE p.name = 'ACCOUNT_CREATE';
+
+INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
+SELECT 'USER_CREATE_API', 'POST', '/api/admin/users', p.id, true, false, NOW(), NOW()
+FROM permissions p WHERE p.name = 'USER_CREATE';
 
 INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
 SELECT 'ACCOUNT_DEPOSIT_API', 'POST', '/api/accounts/*/deposit', p.id, true, false, NOW(), NOW()

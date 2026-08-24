@@ -6,8 +6,9 @@ import com.example.accountdemo.domain.exchange.order.model.OrderStatus;
 import com.example.accountdemo.domain.exchange.order.model.OrderType;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class OrderMapperTest {
 
@@ -25,16 +26,16 @@ class OrderMapperTest {
         assertEquals("LIMIT", entity.getOrderType());
         assertEquals("BTC", entity.getBaseCurrency());
         assertEquals("VND", entity.getQuoteCurrency());
-        assertEquals(100, entity.getQuantity());
-        assertEquals(60_000_000L, entity.getPrice());
-        assertEquals(0, entity.getFilledQuantity());
+        assertEquals(0, BigDecimal.valueOf(100).compareTo(entity.getQuantity()));
+        assertEquals(0, BigDecimal.valueOf(60_000_000L).compareTo(entity.getPrice()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(entity.getFilledQuantity()));
         assertEquals("PENDING", entity.getStatus());
     }
 
     @Test
     void toDomain_shouldMapEntityFields() {
         OrderJpaEntity entity = ExchangeTestData.orderJpaEntity("ORD-SELL-001", "SELL", 61_000_000, 50);
-        entity.setFilledQuantity(20);
+        entity.setFilledQuantity(BigDecimal.valueOf(20));
         entity.setStatus(OrderStatus.PARTIALLY_FILLED.name());
 
         Order order = orderMapper.toDomain(entity);
@@ -42,10 +43,10 @@ class OrderMapperTest {
         assertEquals("ORD-SELL-001", order.getOrderId());
         assertEquals(OrderSide.SELL, order.getSide());
         assertEquals(OrderType.LIMIT, order.getOrderType());
-        assertEquals(50, order.getQuantity().getValue());
-        assertEquals(20, order.getFilledQuantity().getValue());
+        assertEquals(0, BigDecimal.valueOf(50).compareTo(order.getQuantity().getValue()));
+        assertEquals(0, BigDecimal.valueOf(20).compareTo(order.getFilledQuantity().getValue()));
         assertEquals(OrderStatus.PARTIALLY_FILLED, order.getStatus());
-        assertEquals(61_000_000L, order.getPrice().getValue());
+        assertEquals(0, BigDecimal.valueOf(61_000_000L).compareTo(order.getPrice().getValue()));
     }
 
     @Test
@@ -56,7 +57,7 @@ class OrderMapperTest {
         Order restored = orderMapper.toDomain(orderMapper.toEntity(original));
 
         assertEquals(original.getOrderId(), restored.getOrderId());
-        assertEquals(30, restored.getFilledQuantity().getValue());
+        assertEquals(0, BigDecimal.valueOf(30).compareTo(restored.getFilledQuantity().getValue()));
         assertEquals(OrderStatus.PARTIALLY_FILLED, restored.getStatus());
     }
 }

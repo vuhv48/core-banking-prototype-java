@@ -5,9 +5,10 @@
 | [BRD.md](./BRD.md) | Business Requirements Document | Mục tiêu kinh doanh, scope, business rules, stakeholder |
 | [URD.md](./URD.md) | User Requirements Document | Persona, user stories, use cases, user journey |
 | [SRS.md](./SRS.md) | Software Requirements Specification | FR/NFR, API, data model, kiến trúc, traceability |
+| [CURL-POSTMAN.md](./CURL-POSTMAN.md) | API cheat sheet | Toàn bộ lệnh curl — copy sang Postman |
 
 **Tài liệu kỹ thuật triển khai:** [../TAI-LIEU.md](../TAI-LIEU.md)  
-**Lộ trình học senior:** [../SENIOR-NOTES.md](../SENIOR-NOTES.md)
+**Lộ trình học senior:** [./SENIOR-NOTES.md](./SENIOR-NOTES.md)
 
 ## Thứ tự đọc gợi ý
 

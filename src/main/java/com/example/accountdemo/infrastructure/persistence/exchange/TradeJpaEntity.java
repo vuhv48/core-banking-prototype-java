@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
+
 /**
  * JPA entity bảng {@code trades} — giao dịch đã khớp.
  *
@@ -26,6 +28,6 @@ public class TradeJpaEntity extends BaseEntity {
     private String sellerAccountId;
     private String baseCurrency;
     private String quoteCurrency;
-    private long quantity;
-    private long price;
+    private BigDecimal quantity;
+    private BigDecimal price;
 }

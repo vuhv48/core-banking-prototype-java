@@ -5,6 +5,7 @@ import com.example.accountdemo.application.*;
 import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.exchange.order.model.Order;
 import com.example.accountdemo.infrastructure.security.SecurityUtils;
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +32,26 @@ public class AccountController {
     private final ListOrdersByAccountApplicationService listOrdersByAccountApplicationService;
     private final TransferApplicationService transferApplicationService;
     private final FreezeAccountApplicationService freezeAccountApplicationService;
+
+    /** List account có phân trang — chỉ admin (ROLE_ADMIN). Query: page (0-based), size (default 20, max 100). */
+    @GetMapping
+    public ResponseEntity<PageResponse<AccountResponse>> listAll(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    ) {
+        var accountPage = getAccountApplicationService.listAll(
+                SecurityUtils.currentUsername(), page, size
+        );
+        List<AccountResponse> content = accountPage.content().stream()
+                .map(AccountResponse::from)
+                .toList();
+        return ResponseEntity.ok(PageResponse.of(
+                content,
+                accountPage.page(),
+                accountPage.size(),
+                accountPage.totalElements()
+        ));
+    }
 
     @GetMapping("/{accountId}")
     public ResponseEntity<AccountResponse> get(@PathVariable String accountId) {
@@ -58,6 +80,7 @@ public class AccountController {
     @PostMapping
     public ResponseEntity<Void> createAccount(@RequestBody AccountRequest request) {
         createAccountApplicationService.createAccount(
+                SecurityUtils.currentUsername(),
                 request.accountId(),
                 request.status(),
                 toInitialAvailable(request)
@@ -75,8 +98,8 @@ public class AccountController {
     }
 
     /** API DTO → map currency/available cho Application (giống deposit/withdraw: không đẩy DTO xuống service). */
-    private static Map<String, Long> toInitialAvailable(AccountRequest request) {
-        Map<String, Long> map = new LinkedHashMap<>();
+    private static Map<String, BigDecimal> toInitialAvailable(AccountRequest request) {
+        Map<String, BigDecimal> map = new LinkedHashMap<>();
         if (request.holdings() == null) {
             return map;
         }

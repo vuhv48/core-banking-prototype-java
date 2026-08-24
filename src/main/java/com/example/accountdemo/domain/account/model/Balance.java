@@ -2,93 +2,88 @@ package com.example.accountdemo.domain.account.model;
 
 import lombok.Getter;
 
+import java.math.BigDecimal;
+
 /**
  * Value Object — một dòng số dư theo currency bên trong {@link Account}.
- *
- * <p><b>Vì sao cần:</b> tách {@code available} / {@code locked} để đặt lệnh không trừ thẳng,
- * cancel/settle mới biết trả hay chi bao nhiêu. Immutable — mỗi thao tác trả Balance mới.
- *
- * <pre>
- * currency  = VND
- * available = 10_000_000
- * locked    = 0
- * </pre>
+ * Immutable — mỗi thao tác trả Balance mới. Amount dùng BigDecimal.
  */
 @Getter
 public final class Balance {
 
     private final String currency;
-    private final long available;
-    private final long locked;
+    private final BigDecimal available;
+    private final BigDecimal locked;
 
-    public Balance(String currency, long available, long locked) {
+    public Balance(String currency, BigDecimal available, BigDecimal locked) {
         if (currency == null || currency.isBlank()) {
             throw new IllegalArgumentException("currency không được null hoặc rỗng");
         }
-        if (available < 0) {
+        if (available == null || locked == null) {
+            throw new IllegalArgumentException("available/locked không được null");
+        }
+        if (available.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("available không được âm");
         }
-        if (locked < 0) {
+        if (locked.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("locked không được âm");
         }
         this.currency = currency;
-        this.available = available;
-        this.locked = locked;
+        this.available = Money.normalize(available);
+        this.locked = Money.normalize(locked);
     }
 
-    /** Dòng số dư rỗng khi account chưa từng có currency này. */
+    public Balance(String currency, long available, long locked) {
+        this(currency, BigDecimal.valueOf(available), BigDecimal.valueOf(locked));
+    }
+
     public static Balance zero(String currency) {
-        return new Balance(currency, 0, 0);
+        return new Balance(currency, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 
-    /** available → locked (đặt lệnh). */
-    public Balance reserve(long amount) {
+    public Balance reserve(BigDecimal amount) {
         requirePositive(amount);
-        if (available < amount) {
+        if (available.compareTo(amount) < 0) {
             throw new IllegalArgumentException("Số dư khả dụng không đủ để giữ: " + currency);
         }
-        return new Balance(currency, available - amount, locked + amount);
+        return new Balance(currency, available.subtract(amount), locked.add(amount));
     }
 
-    /** locked → available (hủy / thừa). */
-    public Balance release(long amount) {
+    public Balance release(BigDecimal amount) {
         requirePositive(amount);
-        if (locked < amount) {
+        if (locked.compareTo(amount) < 0) {
             throw new IllegalArgumentException("Locked không đủ để giải phóng: " + currency);
         }
-        return new Balance(currency, available + amount, locked - amount);
+        return new Balance(currency, available.add(amount), locked.subtract(amount));
     }
 
-    /** locked giảm khi đã chi cho đối phương (khớp lệnh). */
-    public Balance consumeLocked(long amount) {
+    public Balance consumeLocked(BigDecimal amount) {
         requirePositive(amount);
-        if (locked < amount) {
+        if (locked.compareTo(amount) < 0) {
             throw new IllegalArgumentException("Locked không đủ để tất toán: " + currency);
         }
-        return new Balance(currency, available, locked - amount);
+        return new Balance(currency, available, locked.subtract(amount));
     }
 
-    /** Cộng available (nạp hoặc nhận sau khớp). */
-    public Balance credit(long amount) {
+    public Balance credit(BigDecimal amount) {
         requirePositive(amount);
-        return new Balance(currency, available + amount, locked);
+        return new Balance(currency, available.add(amount), locked);
     }
 
-    /** Trừ available (rút tiền). */
-    public Balance debitAvailable(long amount) {
+    public Balance debitAvailable(BigDecimal amount) {
         requirePositive(amount);
-        if (available < amount) {
+        if (available.compareTo(amount) < 0) {
             throw new IllegalArgumentException("Số dư khả dụng không đủ: " + currency);
         }
-        return new Balance(currency, available - amount, locked);
+        return new Balance(currency, available.subtract(amount), locked);
     }
 
     public Money toAvailableMoney() {
         return new Money(available, currency);
     }
 
-    private static void requirePositive(long amount) {
-        if (amount <= 0) {
+    private static void requirePositive(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("amount phải lớn hơn 0");
         }
     }

@@ -26,6 +26,9 @@ public enum ErrorStatus {
     INVALID_ARGUMENT(400, "INVALID_ARGUMENT", "Tham số không hợp lệ"),
 
     // —— Nghiệp vụ bank / exchange ——
+    USERNAME_ALREADY_EXISTS(409, "USERNAME_ALREADY_EXISTS", "Username đã tồn tại"),
+    EMAIL_ALREADY_EXISTS(409, "EMAIL_ALREADY_EXISTS", "Email đã tồn tại"),
+    ACCOUNT_ALREADY_LINKED(409, "ACCOUNT_ALREADY_LINKED", "Account đã được gắn với user khác"),
     USER_NOT_FOUND(404, "USER_NOT_FOUND", "Không tìm thấy người dùng"),
     ACCOUNT_NOT_FOUND(404, "ACCOUNT_NOT_FOUND", "Không tìm thấy tài khoản"),
     ORDER_NOT_FOUND(404, "ORDER_NOT_FOUND", "Không tìm thấy lệnh"),

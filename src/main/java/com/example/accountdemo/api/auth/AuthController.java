@@ -5,8 +5,11 @@ import com.example.accountdemo.api.auth.dto.LoginResponse;
 import com.example.accountdemo.api.auth.dto.LogoutResponse;
 import com.example.accountdemo.api.auth.dto.RefreshRequest;
 import com.example.accountdemo.api.auth.dto.RefreshTokenResponse;
+import com.example.accountdemo.api.auth.dto.RegisterRequest;
+import com.example.accountdemo.api.auth.dto.RegisterResponse;
 import com.example.accountdemo.api.common.DomainException;
 import com.example.accountdemo.api.common.ErrorStatus;
+import com.example.accountdemo.application.RegisterApplicationService;
 import com.example.accountdemo.infrastructure.persistence.security.RefreshTokenJpaEntity;
 import com.example.accountdemo.infrastructure.persistence.security.RefreshTokenJpaRepository;
 import com.example.accountdemo.infrastructure.persistence.security.UserJpaEntity;
@@ -31,8 +34,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Endpoint đăng nhập, refresh token, logout.
- * Login/refresh không yêu cầu JWT (permitAll trong SecurityConfig).
+ * Endpoint đăng ký, đăng nhập, refresh token, logout.
+ * Register/login/refresh không yêu cầu JWT (permitAll trong SecurityConfig).
  *
  * <p><b>Vì sao cần class này:</b> cấp access/refresh token và thu hồi refresh khi logout —
  * tách khỏi controller nghiệp vụ ví/lệnh.
@@ -47,6 +50,22 @@ public class AuthController {
     private final UserJpaRepository userJpaRepository;
     private final RefreshTokenJpaRepository refreshTokenJpaRepository;
     private final LoginLogService loginLogService;
+    private final RegisterApplicationService registerApplicationService;
+
+    /** Đăng ký user mới + tạo account trading rỗng (ROLE_USER). */
+    @PostMapping("/register")
+    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
+        var result = registerApplicationService.register(
+                request.username(),
+                request.password(),
+                request.email()
+        );
+        return ResponseEntity.ok(new RegisterResponse(
+                result.username(),
+                result.accountId(),
+                "Đăng ký thành công"
+        ));
+    }
 
     /** Đăng nhập: trả access + refresh token và danh sách permission. */
     @PostMapping("/login")
@@ -84,13 +103,17 @@ public class AuthController {
 
         loginLogService.recordSuccessfulLogin(user.getId(), username, httpRequest);
 
+        List<String> roles = userJpaRepository.findRoleNamesByUsername(username);
+
         return ResponseEntity.ok(new LoginResponse(
                 accessToken,
                 rawRefresh,
                 "Bearer",
                 jwtUtil.getAccessExpiresInSeconds(),
                 jwtUtil.getRefreshExpiresInSeconds(),
-                permissions
+                permissions,
+                roles,
+                user.getAccountId()
         ));
     }
 
@@ -114,22 +137,14 @@ public class AuthController {
         refreshTokenJpaRepository.save(tokenEntity);
 
         UserJpaEntity user = tokenEntity.getUser();
-        List<String> permissions = userJpaRepository.findByUsername(user.getUsername())
-                .map(u -> {
-                    List<String> perms = u.getRoles().stream()
-                            .flatMap(r -> r.getPermissions().stream())
-                            .map(p -> p.getName())
-                            .toList();
-                    List<String> direct = u.getDirectPermissions().stream()
-                            .map(p -> p.getName())
-                            .toList();
-                    return Stream.concat(perms.stream(), direct.stream())
-                            .distinct()
-                            .toList();
-                })
-                .orElseThrow(() -> new DomainException(ErrorStatus.USER_NOT_FOUND));
+        String username = user.getUsername();
+        List<String> fromRoles = userJpaRepository.findPermissionNamesFromRoles(username);
+        List<String> direct = userJpaRepository.findDirectPermissionNames(username);
+        List<String> permissions = Stream.concat(fromRoles.stream(), direct.stream())
+                .distinct()
+                .toList();
 
-        String newAccessToken = jwtUtil.generateAccessToken(user.getUsername(), permissions);
+        String newAccessToken = jwtUtil.generateAccessToken(username, permissions);
 
         String newRaw = jwtUtil.generateRefreshToken();
         String newHash = jwtUtil.hashToken(newRaw);

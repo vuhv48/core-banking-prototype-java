@@ -1,45 +1,62 @@
 package com.example.accountdemo.domain.exchange.shared;
 
+import com.example.accountdemo.domain.account.model.Money;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+import java.util.Objects;
+
 /**
- * Value Object — giá giao dịch (số nguyên &gt; 0).
- *
- * <p><b>Vì sao cần class này:</b> không để {@code long} trần làm giá — bắt buộc &gt; 0
- * và so sánh có nghĩa (best bid/ask, price compatible khi match).
- *
- * <pre>
- * value = 60_000_000
- * </pre>
+ * Value Object — giá giao dịch (&gt; 0), hỗ trợ thập phân.
  */
 @Getter
 public final class Price {
 
-    private final long value;
+    private final BigDecimal value;
 
-    /** Tạo giá; phải &gt; 0 (không cho giá 0 / âm). */
-    public Price(long value) {
-        if (value <= 0) {
+    public Price(BigDecimal value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Giá không được null");
+        }
+        if (value.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Giá phải lớn hơn 0");
         }
-        this.value = value;
+        this.value = Money.normalize(value);
     }
 
-    /** True nếu this &gt; other — dùng tìm best bid (giá mua cao nhất). */
+    public Price(long value) {
+        this(BigDecimal.valueOf(value));
+    }
+
+    public Price(String value) {
+        this(new BigDecimal(value));
+    }
+
     public boolean isGreaterThan(Price other) {
         ensureNotNull(other);
-        return this.value > other.value;
+        return this.value.compareTo(other.value) > 0;
     }
 
-    /** True nếu this &lt; other — dùng tìm best ask (giá bán thấp nhất). */
     public boolean isLessThan(Price other) {
         ensureNotNull(other);
-        return this.value < other.value;
+        return this.value.compareTo(other.value) < 0;
     }
 
     private void ensureNotNull(Price other) {
         if (other == null) {
             throw new IllegalArgumentException("other không được null");
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Price price)) return false;
+        return value.compareTo(price.value) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value.stripTrailingZeros());
     }
 }

@@ -5,6 +5,8 @@ import com.example.accountdemo.domain.exchange.shared.Quantity;
 import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -39,8 +41,8 @@ class OrderTest {
         order.match(new Quantity(100));
 
         assertEquals(OrderStatus.FILLED, order.getStatus());
-        assertEquals(100, order.getFilledQuantity().getValue());
-        assertEquals(0, order.getRemainingQuantity().getValue());
+        assertEquals(0, BigDecimal.valueOf(100).compareTo(order.getFilledQuantity().getValue()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(order.getRemainingQuantity().getValue()));
     }
 
     @Test
@@ -50,8 +52,8 @@ class OrderTest {
         order.match(new Quantity(30));
 
         assertEquals(OrderStatus.PARTIALLY_FILLED, order.getStatus());
-        assertEquals(30, order.getFilledQuantity().getValue());
-        assertEquals(70, order.getRemainingQuantity().getValue());
+        assertEquals(0, BigDecimal.valueOf(30).compareTo(order.getFilledQuantity().getValue()));
+        assertEquals(0, BigDecimal.valueOf(70).compareTo(order.getRemainingQuantity().getValue()));
     }
 
     @Test

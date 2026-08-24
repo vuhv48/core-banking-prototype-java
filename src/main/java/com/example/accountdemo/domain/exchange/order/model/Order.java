@@ -5,6 +5,8 @@ import com.example.accountdemo.domain.exchange.shared.Quantity;
 import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+
 /**
  * Aggregate Root — một lệnh mua/bán trên sàn.
  *
@@ -52,7 +54,7 @@ public class Order {
     /** Currency đang treo trên lệnh (VND khi BUY, BTC khi SELL). */
     private String lockedCurrency;
     /** Phần locked còn lại chưa settle/release. */
-    private long lockedAmountRemaining;
+    private BigDecimal lockedAmountRemaining;
 
     /**
      * Tạo lệnh mới (PENDING, filled = 0, chưa lock).
@@ -82,7 +84,7 @@ public class Order {
         if (tradingPair == null) {
             throw new IllegalArgumentException("tradingPair không được null");
         }
-        if (quantity == null || quantity.getValue() <= 0) {
+        if (quantity == null || quantity.getValue().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("quantity phải lớn hơn 0");
         }
         if (orderType == OrderType.LIMIT && price == null) {
@@ -98,7 +100,7 @@ public class Order {
         this.filledQuantity = new Quantity(0);
         this.status = OrderStatus.PENDING;
         this.lockedCurrency = null;
-        this.lockedAmountRemaining = 0;
+        this.lockedAmountRemaining = BigDecimal.ZERO;
     }
 
     /**
@@ -116,22 +118,22 @@ public class Order {
             Quantity filledQuantity,
             OrderStatus status,
             String lockedCurrency,
-            long lockedAmountRemaining
+            BigDecimal lockedAmountRemaining
     ) {
         Order order = new Order(orderId, accountId, side, orderType, tradingPair, quantity, price);
         order.filledQuantity = filledQuantity != null ? filledQuantity : new Quantity(0);
         order.status = status != null ? status : OrderStatus.PENDING;
         order.lockedCurrency = lockedCurrency;
-        order.lockedAmountRemaining = lockedAmountRemaining;
+        order.lockedAmountRemaining = lockedAmountRemaining != null ? lockedAmountRemaining : BigDecimal.ZERO;
         return order;
     }
 
     /** Gán số đang treo sau khi Account.reserve thành công. */
-    public void initializeLock(String currency, long amount) {
+    public void initializeLock(String currency, BigDecimal amount) {
         if (currency == null || currency.isBlank()) {
             throw new IllegalArgumentException("lockedCurrency không được rỗng");
         }
-        if (amount <= 0) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("lockedAmount phải lớn hơn 0");
         }
         this.lockedCurrency = currency;
@@ -139,14 +141,14 @@ public class Order {
     }
 
     /** Giảm phần lock đã dùng khi settle (theo giá limit × qty hoặc qty base). */
-    public void reduceLock(long amount) {
-        if (amount < 0) {
+    public void reduceLock(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("amount không được âm");
         }
-        if (amount > lockedAmountRemaining) {
+        if (amount.compareTo(lockedAmountRemaining) > 0) {
             throw new IllegalArgumentException("reduceLock vượt quá locked còn lại");
         }
-        this.lockedAmountRemaining -= amount;
+        this.lockedAmountRemaining = lockedAmountRemaining.subtract(amount);
     }
 
     /**
@@ -154,7 +156,7 @@ public class Order {
      * Không trừ ví — Application settle sau theo Trade.
      */
     public void match(Quantity executedQuantity) {
-        if (executedQuantity == null || executedQuantity.getValue() <= 0) {
+        if (executedQuantity == null || executedQuantity.getValue().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("executedQuantity phải lớn hơn 0");
         }
         if (status.isFinal()) {

@@ -5,6 +5,7 @@ import com.example.accountdemo.api.common.ErrorStatus;
 import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.account.model.Account;
 import com.example.accountdemo.domain.account.model.Money;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +18,7 @@ public class TransferApplicationService {
     private final OwnershipChecker ownershipGuard;
 
     @Transactional
-    public void transfer(String username, String fromAccountId, String toAccountId, long amount, String currency) {
+    public void transfer(String username, String fromAccountId, String toAccountId, BigDecimal amount, String currency) {
         if (fromAccountId != null && fromAccountId.equals(toAccountId)) {
             throw new DomainException(ErrorStatus.INVALID_ARGUMENT, "Không thể chuyển sang chính tài khoản nguồn");
         }

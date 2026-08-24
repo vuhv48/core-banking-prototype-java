@@ -5,6 +5,7 @@ import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.account.model.AccountStatus;
 import com.example.accountdemo.domain.account.model.Balance;
 import com.example.accountdemo.domain.account.model.Money;
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -36,9 +37,9 @@ class DepositApplicationServiceTest {
         Account account = new Account("ACC-001", AccountStatus.ACTIVE, holdings);
         when(accountRepository.findById("ACC-001")).thenReturn(account);
 
-        depositApplicationService.deposit("ACC-001", 50_000, "VND");
+        depositApplicationService.deposit("ACC-001", BigDecimal.valueOf(50_000), "VND");
 
-        assertEquals(150_000, account.getAvailable("VND").getAmount());
+        assertEquals(0, BigDecimal.valueOf(150_000).compareTo(account.getAvailable("VND").getAmount()));
         verify(accountRepository).save(account);
     }
 
@@ -47,7 +48,7 @@ class DepositApplicationServiceTest {
         when(accountRepository.findById("UNKNOWN")).thenReturn(null);
 
         assertThrows(IllegalArgumentException.class,
-                () -> depositApplicationService.deposit("UNKNOWN", 10_000, "VND"));
+                () -> depositApplicationService.deposit("UNKNOWN", BigDecimal.valueOf(10_000), "VND"));
 
         verify(accountRepository, never()).save(any());
     }

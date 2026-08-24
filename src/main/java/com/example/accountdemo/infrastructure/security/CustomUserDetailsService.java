@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Load UserDetails từ DB khi đăng nhập.
@@ -32,19 +34,14 @@ public class CustomUserDetailsService implements UserDetailsService {
         UserJpaEntity entity = userJpaRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        Set<SimpleGrantedAuthority> authorities = new LinkedHashSet<>();
+        List<String> fromRoles = userJpaRepository.findPermissionNamesFromRoles(username);
+        List<String> direct = userJpaRepository.findDirectPermissionNames(username);
 
-        // Quyền từ roles → role_permissions
-        entity.getRoles().forEach(role ->
-                role.getPermissions().forEach(p ->
-                        authorities.add(new SimpleGrantedAuthority(p.getName()))
-                )
-        );
-
-        // Quyền gán trực tiếp cho user → user_permissions
-        entity.getDirectPermissions().forEach(p ->
-                authorities.add(new SimpleGrantedAuthority(p.getName()))
-        );
+        Set<SimpleGrantedAuthority> authorities = Stream
+                .concat(fromRoles.stream(), direct.stream())
+                .distinct()
+                .map(SimpleGrantedAuthority::new)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
 
         return User.builder()
                 .username(entity.getUsername())

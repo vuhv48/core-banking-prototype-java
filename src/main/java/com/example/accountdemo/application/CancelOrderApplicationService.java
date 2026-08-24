@@ -10,6 +10,7 @@ import com.example.accountdemo.domain.exchange.orderbook.model.OrderBook;
 import com.example.accountdemo.domain.exchange.orderbook.OrderBookRepository;
 import com.example.accountdemo.domain.exchange.order.OrderRepository;
 import com.example.accountdemo.domain.exchange.order.model.OrderStatus;
+import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -55,8 +56,8 @@ public class CancelOrderApplicationService {
             orderBookRepository.save(orderBook);
         }
 
-        long remainingLock = order.getLockedAmountRemaining();
-        if (remainingLock > 0 && order.getLockedCurrency() != null) {
+        BigDecimal remainingLock = order.getLockedAmountRemaining();
+        if (remainingLock.compareTo(BigDecimal.ZERO) > 0 && order.getLockedCurrency() != null) {
             Account account = accountRepository.findById(order.getAccountId());
             if (account == null) {
                 throw new DomainException(ErrorStatus.ACCOUNT_NOT_FOUND);

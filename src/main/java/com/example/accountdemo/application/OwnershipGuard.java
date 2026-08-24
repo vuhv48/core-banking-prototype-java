@@ -32,6 +32,24 @@ public class OwnershipGuard implements OwnershipChecker {
     }
 
     /**
+     * Chỉ ROLE_ADMIN được gọi các use case toàn hệ thống (list all accounts…).
+     */
+    @Override
+    public void requireAdmin(String username) {
+        if (username == null || username.isBlank()) {
+            throw new DomainException(ErrorStatus.UNAUTHORIZED);
+        }
+        if (!userJpaRepository.existsByUsername(username)) {
+            throw new DomainException(ErrorStatus.USER_NOT_FOUND);
+        }
+        boolean isAdmin = userJpaRepository.findRoleNamesByUsername(username).stream()
+                .anyMatch("ROLE_ADMIN"::equals);
+        if (!isAdmin) {
+            throw new DomainException(ErrorStatus.FORBIDDEN, "Chỉ admin được xem danh sách account");
+        }
+    }
+
+    /**
      * Ủy quyền kiểm tra ownership qua accountId của lệnh.
      */
     @Override

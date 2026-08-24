@@ -8,6 +8,7 @@ import com.example.accountdemo.domain.exchange.order.model.OrderType;
 import com.example.accountdemo.domain.exchange.shared.Price;
 import com.example.accountdemo.domain.exchange.shared.Quantity;
 import com.example.accountdemo.domain.exchange.shared.TradingPair;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -59,9 +60,9 @@ public final class ExchangeTestData {
         entity.setOrderType(OrderType.LIMIT.name());
         entity.setBaseCurrency("BTC");
         entity.setQuoteCurrency("VND");
-        entity.setQuantity(quantity);
-        entity.setPrice(price);
-        entity.setFilledQuantity(0);
+        entity.setQuantity(BigDecimal.valueOf(quantity));
+        entity.setPrice(BigDecimal.valueOf(price));
+        entity.setFilledQuantity(BigDecimal.ZERO);
         entity.setStatus(OrderStatus.PENDING.name());
         entity.setDeleted(false);
         entity.setCreatedAt(LocalDateTime.now());

@@ -19,6 +19,7 @@ import com.example.accountdemo.domain.exchange.shared.Quantity;
 import com.example.accountdemo.domain.exchange.matching.Trade;
 import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import com.example.accountdemo.domain.exchange.event.TradeExecutedEvent;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -117,8 +118,8 @@ public class PlaceOrderApplicationService {
         if (order.getStatus() != com.example.accountdemo.domain.exchange.order.model.OrderStatus.CANCELLED) {
             return;
         }
-        long remaining = order.getLockedAmountRemaining();
-        if (remaining <= 0 || order.getLockedCurrency() == null) {
+        BigDecimal remaining = order.getLockedAmountRemaining();
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0 || order.getLockedCurrency() == null) {
             return;
         }
         Account account = accountRepository.findById(order.getAccountId());
@@ -133,7 +134,7 @@ public class PlaceOrderApplicationService {
     private Money calculateLock(Order order) {
         TradingPair pair = order.getTradingPair();
         if (order.getSide() == OrderSide.BUY) {
-            long amount = order.getQuantity().getValue() * order.getPrice().getValue();
+            BigDecimal amount = order.getQuantity().getValue().multiply(order.getPrice().getValue());
             return new Money(amount, pair.getQuoteCurrency());
         }
         return new Money(order.getQuantity().getValue(), pair.getBaseCurrency());

@@ -1,13 +1,16 @@
 package com.example.accountdemo.infrastructure.persistence.account;
 
 import com.example.accountdemo.domain.account.model.Account;
+import com.example.accountdemo.domain.account.AccountPage;
 import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.account.model.Balance;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +63,26 @@ public class AccountRepositoryJpaImpl implements AccountRepository {
             row.setUpdatedAt(now);
         }
         accountJpaRepository.save(entity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Account> findAll() {
+        return accountJpaRepository.findAll()
+                .stream().filter(entity -> !entity.isDeleted())
+                .map(accountMapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AccountPage findPage(int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+        Page<AccountJpaEntity> result = accountJpaRepository.findByDeletedFalse(pageable);
+        List<Account> content = result.getContent().stream()
+                .map(accountMapper::toDomain)
+                .toList();
+        return new AccountPage(content, page, size, result.getTotalElements());
     }
 
     private void syncBalances(AccountJpaEntity entity, Account account, LocalDateTime now) {

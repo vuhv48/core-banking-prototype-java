@@ -1,6 +1,7 @@
 package com.example.accountdemo.application;
 
 import com.example.accountdemo.domain.account.model.Account;
+import com.example.accountdemo.domain.account.AccountPage;
 import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.account.model.AccountStatus;
 import com.example.accountdemo.domain.account.model.Balance;
@@ -19,6 +20,7 @@ import com.example.accountdemo.domain.exchange.shared.Quantity;
 import com.example.accountdemo.domain.exchange.trade.TradeRepository;
 import com.example.accountdemo.domain.exchange.shared.TradingPair;
 import com.example.accountdemo.domain.exchange.event.TradeExecutedEvent;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -54,6 +56,10 @@ class PlaceOrderApplicationServiceEventTest {
         OwnershipChecker allowAll = new OwnershipChecker() {
             @Override
             public void requireAccountAccess(String username, String accountId) {
+            }
+
+            @Override
+            public void requireAdmin(String username) {
             }
 
             @Override
@@ -111,16 +117,16 @@ class PlaceOrderApplicationServiceEventTest {
         assertEquals(1, eventPublisher.events.size());
         TradeExecutedEvent event = eventPublisher.events.get(0);
         assertEquals(buy.getOrderId(), event.getBuyOrderId());
-        assertEquals(10, event.getQuantity().getValue());
-        assertEquals(60_000_000, event.getPrice().getValue());
+        assertEquals(0, BigDecimal.valueOf(10).compareTo(event.getQuantity().getValue()));
+        assertEquals(0, BigDecimal.valueOf(60_000_000).compareTo(event.getPrice().getValue()));
         assertEquals(1, tradeRepository.trades.size());
 
         Account buyer = accountRepository.findById("ACC-1");
         Account seller = accountRepository.findById("ACC-2");
-        assertEquals(10, buyer.getAvailable("BTC").getAmount());
-        assertEquals(0, buyer.getLocked("VND").getAmount());
-        assertEquals(600_000_000L, seller.getAvailable("VND").getAmount());
-        assertEquals(90, seller.getAvailable("BTC").getAmount());
+        assertEquals(0, BigDecimal.valueOf(10).compareTo(buyer.getAvailable("BTC").getAmount()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(buyer.getLocked("VND").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(600_000_000L).compareTo(seller.getAvailable("VND").getAmount()));
+        assertEquals(0, BigDecimal.valueOf(90).compareTo(seller.getAvailable("BTC").getAmount()));
     }
 
     @Test
@@ -137,7 +143,7 @@ class PlaceOrderApplicationServiceEventTest {
 
         assertTrue(eventPublisher.events.isEmpty());
         assertTrue(tradeRepository.trades.isEmpty());
-        assertEquals(500_000_000L, accountRepository.findById("ACC-1").getLocked("VND").getAmount());
+        assertEquals(0, BigDecimal.valueOf(500_000_000L).compareTo(accountRepository.findById("ACC-1").getLocked("VND").getAmount()));
     }
 
     private static final class FakeDomainEventPublisher implements DomainEventPublisher {
@@ -193,6 +199,16 @@ class PlaceOrderApplicationServiceEventTest {
         @Override
         public void save(Account account) {
             store.put(account.getAccountId(), account);
+        }
+
+        @Override
+        public List<Account> findAll() {
+            return List.of();
+        }
+
+        @Override
+        public AccountPage findPage(int page, int size) {
+            return new AccountPage(List.of(), page, size, 0);
         }
     }
 

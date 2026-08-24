@@ -4,6 +4,7 @@ import com.example.accountdemo.domain.exchange.order.model.Order;
 import com.example.accountdemo.domain.exchange.order.model.OrderSide;
 import com.example.accountdemo.domain.exchange.shared.Price;
 import com.example.accountdemo.domain.exchange.shared.TradingPair;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -64,12 +65,12 @@ public class OrderBook {
         if (order.getSide() == OrderSide.BUY) {
             buyOrders.add(order);
             buyOrders.sort(Comparator.comparing(
-                    (Order o) -> o.getPrice() != null ? o.getPrice().getValue() : Long.MIN_VALUE
+                    (Order o) -> o.getPrice() != null ? o.getPrice().getValue() : BigDecimal.valueOf(Long.MIN_VALUE)
             ).reversed());
         } else {
             sellOrders.add(order);
             sellOrders.sort(Comparator.comparing(
-                    (Order o) -> o.getPrice() != null ? o.getPrice().getValue() : Long.MAX_VALUE
+                    (Order o) -> o.getPrice() != null ? o.getPrice().getValue() : BigDecimal.valueOf(Long.MAX_VALUE)
             ));
         }
     }
@@ -91,7 +92,7 @@ public class OrderBook {
         return buyOrders.stream()
                 .map(Order::getPrice)
                 .filter(price -> price != null)
-                .max(Comparator.comparingLong(Price::getValue));
+                .max(Comparator.comparing(Price::getValue));
     }
 
     /** Giá bán tốt nhất (thấp nhất) trên sổ — dùng tham khảo / UI. */
@@ -99,7 +100,7 @@ public class OrderBook {
         return sellOrders.stream()
                 .map(Order::getPrice)
                 .filter(price -> price != null)
-                .min(Comparator.comparingLong(Price::getValue));
+                .min(Comparator.comparing(Price::getValue));
     }
 
     /** Copy list lệnh mua đang chờ — ngoài không phá sort nội bộ. */

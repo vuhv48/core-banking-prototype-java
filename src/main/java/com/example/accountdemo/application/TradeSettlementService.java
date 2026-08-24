@@ -11,6 +11,7 @@ import com.example.accountdemo.domain.exchange.order.model.OrderSide;
 import com.example.accountdemo.domain.exchange.matching.Trade;
 import com.example.accountdemo.domain.exchange.trade.TradeRepository;
 import com.example.accountdemo.domain.exchange.shared.TradingPair;
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -40,9 +41,9 @@ public class TradeSettlementService {
             throw new DomainException(ErrorStatus.ORDER_INVALID, "Không hỗ trợ tự khớp cùng một account");
         }
 
-        long qty = trade.getMatchedQuantity().getValue();
-        long price = trade.getMatchedPrice().getValue();
-        long notional = qty * price;
+        BigDecimal qty = trade.getMatchedQuantity().getValue();
+        BigDecimal price = trade.getMatchedPrice().getValue();
+        BigDecimal notional = qty.multiply(price);
 
         String quote = tradingPair.getQuoteCurrency();
         String base = tradingPair.getBaseCurrency();
@@ -52,9 +53,9 @@ public class TradeSettlementService {
 
         // Buyer: chi VND đã treo, nhận base
         buyer.consumeLocked(new Money(notional, quote));
-        long buyerLockForQty = lockPortionForFill(buyOrder, qty);
-        long buyerExcess = buyerLockForQty - notional;
-        if (buyerExcess > 0) {
+        BigDecimal buyerLockForQty = lockPortionForFill(buyOrder, qty);
+        BigDecimal buyerExcess = buyerLockForQty.subtract(notional);
+        if (buyerExcess.compareTo(BigDecimal.ZERO) > 0) {
             buyer.release(new Money(buyerExcess, quote));
         }
         buyOrder.reduceLock(buyerLockForQty);
@@ -85,12 +86,12 @@ public class TradeSettlementService {
      * Phần lock gắn với qty vừa khớp:
      * BUY LIMIT → qty × limitPrice; SELL → qty (base).
      */
-    private long lockPortionForFill(Order order, long qty) {
+    private BigDecimal lockPortionForFill(Order order, BigDecimal qty) {
         if (order.getSide() == OrderSide.BUY) {
             if (order.getPrice() == null) {
                 throw new DomainException(ErrorStatus.ORDER_INVALID, "BUY thiếu giá limit để settle");
             }
-            return qty * order.getPrice().getValue();
+            return qty.multiply(order.getPrice().getValue());
         }
         return qty;
     }

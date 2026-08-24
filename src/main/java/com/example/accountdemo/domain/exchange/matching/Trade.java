@@ -4,6 +4,8 @@ import lombok.Getter;
 import com.example.accountdemo.domain.exchange.shared.Price;
 import com.example.accountdemo.domain.exchange.shared.Quantity;
 
+import java.math.BigDecimal;
+
 /**
  * Value Object — một nhát khớp trên RAM (chưa lưu DB).
  *
@@ -45,7 +47,7 @@ public final class Trade {
         if (sellOrderId == null || sellOrderId.isBlank()) {
             throw new IllegalArgumentException("sellOrderId không được null hoặc rỗng");
         }
-        if (matchedQuantity == null || matchedQuantity.getValue() <= 0) {
+        if (matchedQuantity == null || matchedQuantity.getValue().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("matchedQuantity phải lớn hơn 0");
         }
         if (matchedPrice == null) {
