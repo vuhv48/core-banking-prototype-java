@@ -1,10 +1,12 @@
 package com.example.accountdemo.api;
 
 import com.example.accountdemo.api.dto.OrderResponse;
+import com.example.accountdemo.api.dto.PageResponse;
 import com.example.accountdemo.api.dto.PlaceOrderRequest;
 import com.example.accountdemo.api.dto.PlaceOrderResponse;
 import com.example.accountdemo.application.CancelOrderApplicationService;
 import com.example.accountdemo.application.GetOrderApplicationService;
+import com.example.accountdemo.application.ListAllOrdersApplicationService;
 import com.example.accountdemo.application.PlaceOrderApplicationService;
 import com.example.accountdemo.domain.exchange.order.model.Order;
 import com.example.accountdemo.domain.exchange.order.model.OrderSide;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +40,30 @@ public class OrderController {
     private final PlaceOrderApplicationService placeOrderApplicationService;
     private final CancelOrderApplicationService cancelOrderApplicationService;
     private final GetOrderApplicationService getOrderApplicationService;
+    private final ListAllOrdersApplicationService listAllOrdersApplicationService;
+
+    /** Admin: list / tìm lệnh (accountId, orderId) + phân trang. */
+    @GetMapping
+    public ResponseEntity<PageResponse<OrderResponse>> listOrders(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String accountId,
+            @RequestParam(required = false) String orderId
+    ) {
+        var orderPage = listAllOrdersApplicationService.list(
+                SecurityUtils.currentUsername(),
+                page,
+                size,
+                accountId,
+                orderId
+        );
+        return ResponseEntity.ok(PageResponse.of(
+                orderPage.content().stream().map(OrderResponse::from).toList(),
+                orderPage.page(),
+                orderPage.size(),
+                orderPage.totalElements()
+        ));
+    }
 
     /** Đặt lệnh BUY/SELL LIMIT (hoặc SELL MARKET). */
     @PostMapping

@@ -169,7 +169,9 @@ curl -X POST '{{BASE}}/api/admin/users' \
   }'
 ```
 
-### 2.3 Nạp tiền / deposit (admin)
+### 2.3 Nạp tiền / deposit
+
+Trader nạp **ví của mình**; admin (không gắn account) nạp hộ được mọi ví.
 
 > Amount / quantity / price dùng **số thập phân** được (`BigDecimal`, scale tối đa 8).
 
@@ -238,7 +240,20 @@ curl -X POST '{{BASE}}/api/accounts/ACC-001/unfreeze' \
 ### 2.8 List orders theo account
 
 ```bash
-curl -X GET '{{BASE}}/api/accounts/ACC-001/orders' \
+curl -X GET '{{BASE}}/api/accounts/ACC-001/orders?page=0&size=10' \
+  -H 'Authorization: Bearer {{TOKEN}}'
+```
+
+### 2.8b Admin list / tìm lệnh (phân trang)
+
+```bash
+curl -X GET '{{BASE}}/api/orders?page=0&size=10' \
+  -H 'Authorization: Bearer {{TOKEN}}'
+
+curl -X GET '{{BASE}}/api/orders?accountId=ACC-001&page=0&size=10' \
+  -H 'Authorization: Bearer {{TOKEN}}'
+
+curl -X GET '{{BASE}}/api/orders?orderId={{ORDER_ID}}' \
   -H 'Authorization: Bearer {{TOKEN}}'
 ```
 

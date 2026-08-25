@@ -27,6 +27,9 @@ class DepositApplicationServiceTest {
     @Mock
     private AccountRepository accountRepository;
 
+    @Mock
+    private OwnershipChecker ownershipGuard;
+
     @InjectMocks
     private DepositApplicationService depositApplicationService;
 
@@ -37,7 +40,7 @@ class DepositApplicationServiceTest {
         Account account = new Account("ACC-001", AccountStatus.ACTIVE, holdings);
         when(accountRepository.findById("ACC-001")).thenReturn(account);
 
-        depositApplicationService.deposit("ACC-001", BigDecimal.valueOf(50_000), "VND");
+        depositApplicationService.deposit("trader1", "ACC-001", BigDecimal.valueOf(50_000), "VND");
 
         assertEquals(0, BigDecimal.valueOf(150_000).compareTo(account.getAvailable("VND").getAmount()));
         verify(accountRepository).save(account);
@@ -48,7 +51,7 @@ class DepositApplicationServiceTest {
         when(accountRepository.findById("UNKNOWN")).thenReturn(null);
 
         assertThrows(IllegalArgumentException.class,
-                () -> depositApplicationService.deposit("UNKNOWN", BigDecimal.valueOf(10_000), "VND"));
+                () -> depositApplicationService.deposit("trader1", "UNKNOWN", BigDecimal.valueOf(10_000), "VND"));
 
         verify(accountRepository, never()).save(any());
     }

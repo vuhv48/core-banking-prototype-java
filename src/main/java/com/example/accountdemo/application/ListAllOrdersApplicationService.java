@@ -1,8 +1,5 @@
 package com.example.accountdemo.application;
 
-import com.example.accountdemo.api.common.DomainException;
-import com.example.accountdemo.api.common.ErrorStatus;
-import com.example.accountdemo.domain.account.AccountRepository;
 import com.example.accountdemo.domain.exchange.order.OrderPage;
 import com.example.accountdemo.domain.exchange.order.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,33 +7,37 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Application Service — use case xem danh sách lệnh của một tài khoản (có phân trang).
+ * Admin: list / tìm lệnh toàn hệ thống, có phân trang.
  */
 @Service
 @RequiredArgsConstructor
-public class ListOrdersByAccountApplicationService {
+public class ListAllOrdersApplicationService {
 
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_SIZE = 100;
 
     private final OrderRepository orderRepository;
-    private final AccountRepository accountRepository;
     private final OwnershipChecker ownershipGuard;
 
     @Transactional(readOnly = true)
-    public OrderPage getOrdersByAccountId(
+    public OrderPage list(
             String username,
-            String accountId,
             Integer page,
-            Integer size
+            Integer size,
+            String accountId,
+            String orderId
     ) {
-        ownershipGuard.requireAccountAccess(username, accountId);
-        if (accountRepository.findById(accountId) == null) {
-            throw new DomainException(ErrorStatus.ACCOUNT_NOT_FOUND);
-        }
+        ownershipGuard.requireAdmin(username);
         int p = page == null || page < 0 ? DEFAULT_PAGE : page;
         int s = size == null || size <= 0 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
-        return orderRepository.findPage(p, s, accountId, null);
+        return orderRepository.findPage(p, s, blankToNull(accountId), blankToNull(orderId));
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }

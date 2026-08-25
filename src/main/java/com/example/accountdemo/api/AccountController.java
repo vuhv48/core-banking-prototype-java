@@ -3,7 +3,6 @@ package com.example.accountdemo.api;
 import com.example.accountdemo.api.dto.*;
 import com.example.accountdemo.application.*;
 import com.example.accountdemo.domain.account.model.Account;
-import com.example.accountdemo.domain.exchange.order.model.Order;
 import com.example.accountdemo.infrastructure.security.SecurityUtils;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -73,7 +72,12 @@ public class AccountController {
             @PathVariable String accountId,
             @RequestBody AmountRequest request
     ) {
-        depositApplicationService.deposit(accountId, request.amount(), request.currency());
+        depositApplicationService.deposit(
+                SecurityUtils.currentUsername(),
+                accountId,
+                request.amount(),
+                request.currency()
+        );
         return ResponseEntity.ok().build();
     }
 
@@ -89,12 +93,23 @@ public class AccountController {
     }
 
     @GetMapping("/{accountId}/orders")
-    public ResponseEntity<List<OrderResponse>> getOrdersByAccountId(@PathVariable String accountId) {
-        List<Order> orders = listOrdersByAccountApplicationService.getOrdersByAccountId(
+    public ResponseEntity<PageResponse<OrderResponse>> getOrdersByAccountId(
+            @PathVariable String accountId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    ) {
+        var orderPage = listOrdersByAccountApplicationService.getOrdersByAccountId(
                 SecurityUtils.currentUsername(),
-                accountId
+                accountId,
+                page,
+                size
         );
-        return ResponseEntity.ok(orders.stream().map(OrderResponse::from).toList());
+        return ResponseEntity.ok(PageResponse.of(
+                orderPage.content().stream().map(OrderResponse::from).toList(),
+                orderPage.page(),
+                orderPage.size(),
+                orderPage.totalElements()
+        ));
     }
 
     /** API DTO → map currency/available cho Application (giống deposit/withdraw: không đẩy DTO xuống service). */

@@ -19,4 +19,10 @@ public interface OrderRepository {
     void save(Order order);
 
     List<Order> findByAccountId(String accountId);
+
+    /**
+     * Phân trang. {@code accountId}/{@code orderId} null = không lọc;
+     * có giá trị thì khớp <em>chứa</em> chuỗi (không cần đúng cả ID).
+     */
+    OrderPage findPage(int page, int size, String accountId, String orderId);
 }

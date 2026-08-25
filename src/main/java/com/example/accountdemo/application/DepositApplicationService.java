@@ -17,11 +17,14 @@ import lombok.RequiredArgsConstructor;
 public class DepositApplicationService {
 
     private final AccountRepository accountRepository;
+    private final OwnershipChecker ownershipGuard;
 
     /**
      * Nạp amount/currency vào tài khoản; tăng available của đồng tương ứng.
+     * Trader chỉ nạp ví của mình; admin (không gắn account) nạp hộ được.
      */
-    public void deposit(String accountId, BigDecimal amount, String currency) {
+    public void deposit(String username, String accountId, BigDecimal amount, String currency) {
+        ownershipGuard.requireAccountAccess(username, accountId);
         Money money = new Money(amount, currency);
         Account account = accountRepository.findById(accountId);
         if (account == null) {

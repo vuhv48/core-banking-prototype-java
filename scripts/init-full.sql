@@ -291,6 +291,10 @@ SELECT 'ORDER_LIST_API', 'GET', '/api/orders/**', p.id, true, false, NOW(), NOW(
 FROM permissions p WHERE p.name = 'ORDER_READ';
 
 INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
+SELECT 'ORDER_LIST_ALL_API', 'GET', '/api/orders', p.id, true, false, NOW(), NOW()
+FROM permissions p WHERE p.name = 'ORDER_READ';
+
+INSERT INTO resources (name, http_method, path_pattern, permission_id, enabled, deleted, created_at, updated_at)
 SELECT 'ORDER_BOOK_LIST_API', 'GET', '/api/order-books/**', p.id, true, false, NOW(), NOW()
 FROM permissions p WHERE p.name = 'ORDER_READ';
 
@@ -348,7 +352,7 @@ WHERE r.name = 'ROLE_ADMIN';
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r JOIN permissions p ON p.name IN (
-    'ORDER_PLACE', 'ORDER_CANCEL', 'ORDER_READ', 'ACCOUNT_READ', 'ACCOUNT_WITHDRAW'
+    'ORDER_PLACE', 'ORDER_CANCEL', 'ORDER_READ', 'ACCOUNT_READ', 'ACCOUNT_WITHDRAW', 'ACCOUNT_DEPOSIT'
 )
 WHERE r.name = 'ROLE_USER';
 

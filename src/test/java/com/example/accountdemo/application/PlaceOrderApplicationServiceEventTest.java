@@ -7,6 +7,7 @@ import com.example.accountdemo.domain.account.model.AccountStatus;
 import com.example.accountdemo.domain.account.model.Balance;
 import com.example.accountdemo.domain.exchange.event.DomainEventPublisher;
 import com.example.accountdemo.domain.exchange.trade.model.ExecutedTrade;
+import com.example.accountdemo.domain.exchange.order.OrderPage;
 import com.example.accountdemo.domain.exchange.order.model.Order;
 import com.example.accountdemo.domain.exchange.orderbook.model.OrderBook;
 import com.example.accountdemo.domain.exchange.orderbook.OrderBookRepository;
@@ -171,6 +172,11 @@ class PlaceOrderApplicationServiceEventTest {
         @Override
         public List<Order> findByAccountId(String accountId) {
             return List.of();
+        }
+
+        @Override
+        public OrderPage findPage(int page, int size, String accountId, String orderId) {
+            return new OrderPage(List.of(), page, size, 0);
         }
     }
 
